@@ -1,0 +1,13 @@
+{
+  "name": "S-A-U-N-A München",
+  "short_name": "SAUNA",
+  "description": "Club · München · Donnerstag – Samstag",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0806",
+  "theme_color": "#e8820c",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "img/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

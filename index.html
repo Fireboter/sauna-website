@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>S-A-U-N-A — München</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e8820c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAUNA">
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -114,7 +121,7 @@
               mask-repeat: no-repeat;
       -webkit-mask-position: top;
               mask-position: top;
-      animation: logoReveal 3s 0.7s cubic-bezier(0.15, 0, 0.35, 1) forwards;
+      animation: logoReveal 3s 0.2s cubic-bezier(0.15, 0, 0.35, 1) forwards;
     }
 
     .logo-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
@@ -141,7 +148,7 @@
       text-transform: uppercase;
       margin-bottom: 1.8rem;
       opacity: 0;
-      animation: fadeDown 0.65s 0.05s ease-out forwards;
+      animation: fadeDown 0.65s 0.1s ease-out forwards;
     }
 
     .tagline {
@@ -221,6 +228,7 @@
       .woche-layout {
         grid-template-columns: 1fr;
       }
+      /* Schnäppchen appears after photo cards (default DOM order) */
     }
 
     .woche-side {
@@ -265,32 +273,23 @@
     @media (max-width: 960px) {
       .woche-side {
         position: static;
-        flex-direction: row;
+        flex-direction: column;
         max-width: 100%;
         align-items: stretch;
       }
-      .woche-side-img {
-        width: 42%;
-        aspect-ratio: 3/4;
+      .schnappchen-img-wrap {
+        width: 100%;
         flex-shrink: 0;
       }
-      .woche-side-caption {
-        flex: 1;
-        border: 1.5px solid var(--border);
-        border-left: none;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        padding: 1.4rem 1.4rem 1.4rem;
+      .woche-side-img {
+        width: 100%;
+        aspect-ratio: 16/9;
+        flex-shrink: 0;
       }
     }
 
     @media (max-width: 480px) {
-      .woche-side {
-        flex-direction: column;
-      }
-      .woche-side-img { width: 100%; }
-      .woche-side-caption { border-left: 1.5px solid var(--border); border-top: none; }
+      .woche-side-img { aspect-ratio: 4/3; }
     }
 
     .photo-grid {
@@ -547,96 +546,130 @@
     .footer-logo { font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700; letter-spacing: 0.15em; }
     .footer-copy { font-size: 0.78rem; color: var(--muted); }
 
-    /* ─── PRELOADER ─── */
-    #preloader {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: #0a0806;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2.5rem;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
-    }
-
-    #preloader.done {
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    .preloader-logo {
-      width: clamp(180px, 45vw, 320px);
-      filter: drop-shadow(0 0 32px rgba(232,130,12,0.35));
-      animation: preloaderPulse 1.8s ease-in-out infinite;
-    }
-
-    @keyframes preloaderPulse {
-      0%, 100% { filter: drop-shadow(0 0 32px rgba(232,130,12,0.35)); }
-      50%       { filter: drop-shadow(0 0 60px rgba(255,160,50,0.65)); }
-    }
-
-    .preloader-bar-wrap {
-      width: clamp(140px, 40vw, 240px);
-      height: 1px;
-      background: rgba(232,130,12,0.15);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .preloader-bar {
-      position: absolute;
-      left: -100%;
-      top: 0;
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(to right, transparent, #e8820c, #ffd060, #e8820c, transparent);
-      animation: preloaderSweep 1.4s ease-in-out infinite;
-    }
-
-    @keyframes preloaderSweep {
-      0%   { left: -100%; }
-      100% { left: 100%; }
-    }
-
     /* ─── ANIMATIONS ─── */
     @keyframes fadeDown {
       from { opacity: 0; transform: translateY(-16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     @keyframes fadeIn { to { opacity: 1; } }
+
+    /* ─── SCHNÄPPCHEN FOG ─── */
+    .schnappchen-img-wrap {
+      position: relative;
+      display: block;
+      flex-shrink: 0;
+      line-height: 0;
+      overflow: hidden; /* clips fog bands to image boundary */
+    }
+
+    .schnappchen-fog {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 10;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      /* Very subtle dark veil so image shows dimly between fog bands */
+      background: rgba(15, 12, 9, 0.40);
+    }
+
+    /* Canvas (kept for JS but not primary now) */
+    .fog-canvas-inner {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      display: none; /* disabled — CSS bands handle the fog */
+    }
+
+    /* Horizontal fog bands — drift independently, gaps reveal dark image */
+    .fog-band {
+      position: absolute;
+      left: -30%;
+      width: 160%;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .fog-band-1 { height: 55%; top: -18%;   background: radial-gradient(ellipse 100% 100%, rgba(255,252,248,0.68) 0%, rgba(242,238,232,0.35) 45%, transparent 72%); filter: blur(14px); animation: fb1 9s  ease-in-out infinite alternate; }
+    .fog-band-2 { height: 50%; top: 15%;    background: radial-gradient(ellipse 100% 100%, rgba(250,248,244,0.55) 0%, rgba(236,232,226,0.28) 45%, transparent 70%); filter: blur(18px); animation: fb2 12s ease-in-out infinite alternate; }
+    .fog-band-3 { height: 55%; bottom: -14%; background: radial-gradient(ellipse 100% 100%, rgba(255,253,250,0.62) 0%, rgba(240,236,230,0.32) 45%, transparent 72%); filter: blur(15px); animation: fb3 10s ease-in-out infinite alternate; }
+    .fog-band-4 { height: 45%; top: 38%;    background: radial-gradient(ellipse 100% 100%, rgba(248,245,241,0.45) 0%, rgba(232,228,222,0.22) 45%, transparent 68%); filter: blur(20px); animation: fb4 14s ease-in-out infinite alternate; }
+
+    @keyframes fb1 { 0%{transform:translateX(0)  scaleX(1);}    100%{transform:translateX(10%) scaleX(1.06);} }
+    @keyframes fb2 { 0%{transform:translateX(0)  scaleX(1.04);} 100%{transform:translateX(-8%) scaleX(0.96);} }
+    @keyframes fb3 { 0%{transform:translateX(0)  scaleX(0.97);} 100%{transform:translateX(7%)  scaleX(1.05);} }
+    @keyframes fb4 { 0%{transform:translateX(0)  scaleX(1.02);} 100%{transform:translateX(-6%) scaleX(0.98);} }
+
+    /* ── SCHNÄPPCHEN diagonal label ── */
+    .schnappchen-label {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      white-space: nowrap;
+      /* diagonal strip backing */
+      background: rgba(8, 6, 3, 0.72);
+      border-top: 2px solid rgba(232, 130, 12, 0.70);
+      border-bottom: 2px solid rgba(232, 130, 12, 0.70);
+      padding: 0.18em 0.9em;
+      /* diagonal orientation */
+      transform: rotate(-27deg);
+      /* text style */
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.8rem, 9vw, 5rem);
+      color: #ffd060;
+      letter-spacing: 0.14em;
+      line-height: 1.1;
+      text-shadow:
+        0 0 22px rgba(255, 200, 50, 0.85),
+        0 0 55px rgba(232, 130, 12, 0.55),
+        2px 3px 6px rgba(0, 0, 0, 0.95);
+      -webkit-text-stroke: 0.5px rgba(200, 100, 0, 0.50);
+      pointer-events: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .schnappchen-label .schn-star {
+      font-size: 0.40em;
+      color: #e8820c;
+      opacity: 0.85;
+      line-height: 1;
+      position: relative;
+      top: -0.05em;
+    }
+
+    /* Cloud blobs that rise and fade after click */
+    .cloud-blob {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 800;
+      background: radial-gradient(ellipse, rgba(225,221,216,0.88) 0%, rgba(205,201,195,0.52) 45%, transparent 72%);
+      filter: blur(22px);
+      animation: cloudRiseUp 3s ease-out forwards;
+    }
+    @keyframes cloudRiseUp {
+      0%   { opacity: 0;    transform: translateY(8px)   scale(0.65); }
+      18%  { opacity: 0.85;                                             }
+      100% { opacity: 0;    transform: translateY(-55vh)  scale(1.15); }
+    }
+
+    /* Fog cover fade-out on click */
+    .schnappchen-fog {
+      transition: opacity 1.2s ease, visibility 1.2s ease;
+    }
+    .schnappchen-fog.dismissed {
+      opacity: 0 !important;
+      visibility: hidden;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
-
-<!-- PRELOADER -->
-<div id="preloader">
-  <div class="preloader-logo">
-    <svg viewBox="0 0 601 385" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="plG" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stop-color="#ffd060"/>
-          <stop offset="25%"  stop-color="#f5a020"/>
-          <stop offset="55%"  stop-color="#c84010"/>
-          <stop offset="100%" stop-color="#6a1002"/>
-        </linearGradient>
-      </defs>
-      <path fill="url(#plG)" fill-rule="evenodd"
-        d="M 30,18 L 302,369 L 575,19 L 554,18 L 301,340 L 51,18 Z
-           M 416,18 L 416,99 L 417,100 L 438,100 L 439,99 L 439,80 L 441,78 L 455,78 L 456,79 L 456,98 L 457,100 L 478,100 L 479,99 L 479,18 Z
-           M 198,18 L 198,99 L 199,100 L 220,100 L 221,99 L 221,81 L 223,78 L 237,78 L 239,80 L 239,99 L 240,100 L 260,100 L 261,99 L 261,18 Z
-           M 271,18 L 271,99 L 272,100 L 333,100 L 334,99 L 334,18 L 311,18 L 311,82 L 309,84 L 296,84 L 294,82 L 294,18 Z
-           M 344,18 L 344,99 L 345,100 L 365,100 L 366,99 L 366,36 L 368,34 L 383,34 L 384,35 L 384,99 L 385,100 L 406,100 L 407,99 L 407,18 Z
-           M 126,18 L 126,67 L 163,67 L 166,69 L 166,82 L 164,84 L 126,84 L 126,99 L 127,100 L 189,100 L 189,52 L 188,51 L 150,51 L 149,50 L 149,36 L 151,34 L 189,34 L 189,18 Z
-           M 224,34 L 236,34 L 239,37 L 239,59 L 238,60 L 238,61 L 237,62 L 223,62 L 222,61 L 222,60 L 221,59 L 221,37 Z
-           M 441,34 L 454,34 L 456,36 L 456,60 L 454,62 L 441,62 L 439,60 L 439,36 Z"/>
-    </svg>
-  </div>
-  <div class="preloader-bar-wrap">
-    <div class="preloader-bar"></div>
-  </div>
-</div>
 
 <canvas class="fog-canvas"   id="fogCanvas"></canvas>
 <canvas class="steam-canvas" id="steamCanvas"></canvas>
@@ -699,8 +732,6 @@
 
 </section>
 
-<div class="heat-divider"></div>
-
 <!-- PROGRAMM -->
 <section class="programm" id="programm">
   <div class="container">
@@ -711,13 +742,24 @@
         <!-- Cards injected by JS -->
       </div>
       <aside class="woche-side">
-        <img class="woche-side-img" src="img/vogelmar16_hf.jpg" alt="Vogelmar">
+        <div class="schnappchen-img-wrap">
+          <img class="woche-side-img" src="img/vogelmar16_hf.jpg" alt="Vogelmar">
+          <div class="schnappchen-fog" id="schnappchen-fog">
+            <div class="fog-band fog-band-1"></div>
+            <div class="fog-band fog-band-2"></div>
+            <div class="fog-band fog-band-3"></div>
+            <div class="fog-band fog-band-4"></div>
+            <span class="schnappchen-label">
+              <span class="schn-star">★</span>
+              Schnäppchen
+              <span class="schn-star">★</span>
+            </span>
+          </div>
+        </div>
       </aside>
     </div>
   </div>
 </section>
-
-<div class="heat-divider"></div>
 
 <!-- INFO -->
 <section class="info" id="info">
@@ -840,49 +882,6 @@
     if (hero) hero.style.minHeight = window.innerHeight + 'px';
   })();
 
-  // ── PRELOADER ─────────────────────────────────────────────────
-  (function initPreloader() {
-    const loader = document.getElementById('preloader');
-    if (!loader) return;
-
-    // Collect all images on the page (card backgrounds + explicit imgs)
-    const program = loadProgram();
-    const srcs = [
-      ...program.map(t => t.photo).filter(Boolean),
-      'img/vogelmar16_hf.jpg',
-    ];
-
-    let loaded = 0;
-    const total = srcs.length;
-
-    function tryDone() {
-      loaded++;
-      if (loaded >= total) dismiss();
-    }
-
-    function dismiss() {
-      // Minimum 600ms so the animation has a beat to show
-      const elapsed = Date.now() - startTime;
-      const delay = Math.max(0, 600 - elapsed);
-      setTimeout(() => loader.classList.add('done'), delay);
-    }
-
-    const startTime = Date.now();
-
-    if (total === 0) {
-      dismiss();
-      return;
-    }
-
-    srcs.forEach(src => {
-      const img = new Image();
-      img.onload = img.onerror = tryDone;
-      img.src = src;
-    });
-
-    // Safety fallback: dismiss after 4s regardless
-    setTimeout(dismiss, 4000);
-  })();
 
   // ══════════════════════════════════════════════════════════════
   // PARTICLE SYSTEM — interactive dust + ember + intro convergence
@@ -1238,6 +1237,131 @@
   const GMAPS_URL = 'https://www.google.com/maps/place/SAUNA/@48.1434971,11.5553745,16z/data=!3m1!4b1!4m6!3m5!1s0x479e75fb8770af7d:0xddaa2021981e0173!8m2!3d48.1434971!4d11.5579548!16s%2Fg%2F1hc3frp36?entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D';
   document.getElementById('leafletMap').style.cursor = 'pointer';
   document.getElementById('leafletMap').addEventListener('click', () => window.open(GMAPS_URL, '_blank'));
+
+  // ── SCHNÄPPCHEN FOG ──────────────────────────────────────────
+  (function initSchnappchen() {
+    const fogDiv = document.getElementById('schnappchen-fog');
+    if (!fogDiv) return;
+
+    // ── INNER FOG CANVAS ───────────────────────────────────────
+    const fc = document.createElement('canvas');
+    fc.className = 'fog-canvas-inner';
+    fogDiv.insertBefore(fc, fogDiv.firstChild);
+    const fctx = fc.getContext('2d');
+
+    function resizeFogCanvas() {
+      const r = fogDiv.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        fc.width  = Math.round(r.width);
+        fc.height = Math.round(r.height);
+      }
+    }
+    resizeFogCanvas();
+    window.addEventListener('resize', resizeFogCanvas);
+
+    // Two-layer cloud system:
+    // Layer A — large diffuse base masses (cover full area, low opacity)
+    // Layer B — smaller cloud puffs (visible cloud shapes, higher opacity)
+    const BLOBS_A = [
+      { xF:0.18, yF:0.25, rxF:0.70, ryF:0.55, op:0.38, ph:0.00, sp:0.00060 },
+      { xF:0.75, yF:0.60, rxF:0.65, ryF:0.70, op:0.35, ph:1.80, sp:0.00075 },
+      { xF:0.42, yF:0.85, rxF:0.72, ryF:0.50, op:0.36, ph:0.90, sp:0.00055 },
+      { xF:0.58, yF:0.15, rxF:0.60, ryF:0.65, op:0.34, ph:2.50, sp:0.00085 },
+    ];
+    const BLOBS_B = [
+      { xF:0.12, yF:0.20, rxF:0.28, ryF:0.24, op:0.80, ph:0.50, sp:0.00120 },
+      { xF:0.65, yF:0.15, rxF:0.32, ryF:0.28, op:0.78, ph:1.20, sp:0.00100 },
+      { xF:0.30, yF:0.50, rxF:0.30, ryF:0.26, op:0.75, ph:2.10, sp:0.00090 },
+      { xF:0.80, yF:0.40, rxF:0.26, ryF:0.30, op:0.82, ph:0.80, sp:0.00130 },
+      { xF:0.15, yF:0.78, rxF:0.34, ryF:0.25, op:0.76, ph:3.00, sp:0.00080 },
+      { xF:0.55, yF:0.68, rxF:0.28, ryF:0.32, op:0.72, ph:1.60, sp:0.00115 },
+      { xF:0.88, yF:0.75, rxF:0.30, ryF:0.27, op:0.80, ph:2.80, sp:0.00095 },
+      { xF:0.42, yF:0.32, rxF:0.24, ryF:0.28, op:0.74, ph:0.30, sp:0.00140 },
+      { xF:0.72, yF:0.88, rxF:0.32, ryF:0.26, op:0.78, ph:1.90, sp:0.00070 },
+    ];
+
+    let fogT = 0;
+
+    function drawInnerFog() {
+      // Auto-resize canvas each frame if layout changed
+      const rect = fogDiv.getBoundingClientRect();
+      if (rect.width > 0 && (fc.width !== Math.round(rect.width) || fc.height !== Math.round(rect.height))) {
+        fc.width  = Math.round(rect.width);
+        fc.height = Math.round(rect.height);
+      }
+      const W = fc.width, H = fc.height;
+      if (!W || !H) return;
+      fctx.clearRect(0, 0, W, H);
+
+      function drawBlob(b, blur) {
+        const cx = (b.xF + Math.sin(fogT * b.sp + b.ph)       * 0.08) * W;
+        const cy = (b.yF + Math.cos(fogT * b.sp * 0.7 + b.ph) * 0.07) * H;
+        const rx  = b.rxF * W;
+        const ry  = b.ryF * H;
+        const r   = Math.max(rx, ry);
+
+        fctx.save();
+        if (blur) fctx.filter = 'blur(' + blur + 'px)';
+        fctx.translate(cx, cy);
+        fctx.scale(rx / r, ry / r);
+
+        const g = fctx.createRadialGradient(0, 0, 0, 0, 0, r);
+        g.addColorStop(0,    'rgba(248,245,241,' + b.op + ')');
+        g.addColorStop(0.25, 'rgba(238,234,228,' + (b.op * 0.85) + ')');
+        g.addColorStop(0.55, 'rgba(224,220,213,' + (b.op * 0.55) + ')');
+        g.addColorStop(0.80, 'rgba(210,206,199,' + (b.op * 0.25) + ')');
+        g.addColorStop(1,    'transparent');
+
+        fctx.beginPath();
+        fctx.arc(0, 0, r, 0, Math.PI * 2);
+        fctx.fillStyle = g;
+        fctx.fill();
+        fctx.restore();
+      }
+
+      // Layer A: large diffuse base (heavy blur → soft haze covering full image)
+      BLOBS_A.forEach(function(b) { drawBlob(b, 28); });
+      // Layer B: cloud puffs (mild blur → visible organic cloud shapes)
+      BLOBS_B.forEach(function(b) { drawBlob(b, 10); });
+    }
+
+    // ── CLICK: DISMISS FOG + SPAWN RISING CLOUDS ───────────────
+    fogDiv.addEventListener('click', function() {
+      // 1. Dismiss the Schnäppchen cover
+      fogDiv.classList.add('dismissed');
+
+      // 2. Spawn cloud blobs that rise upward and vanish over 3 s
+      const rect = fogDiv.getBoundingClientRect();
+      const cx   = rect.left + rect.width  / 2;
+      const cy   = rect.top  + rect.height / 2;
+      const count = 10 + Math.floor(Math.random() * 6);
+
+      for (var i = 0; i < count; i++) {
+        var blob = document.createElement('div');
+        blob.className = 'cloud-blob';
+        var size = 80 + Math.random() * 220;
+        var h    = size * (0.55 + Math.random() * 0.50);
+        // Spread horizontally across the image width, vertically centred
+        var bx = cx - size / 2 + (Math.random() - 0.5) * rect.width  * 1.1;
+        var by = cy - h   / 2  + (Math.random() - 0.5) * rect.height * 0.6;
+        blob.style.left   = bx + 'px';
+        blob.style.top    = by + 'px';
+        blob.style.width  = size + 'px';
+        blob.style.height = h    + 'px';
+        blob.style.animationDelay = (Math.random() * 0.4) + 's';
+        document.body.appendChild(blob);
+        setTimeout(function(b) { b.remove(); }, 3600, blob);
+      }
+    });
+
+    // ── FOG CANVAS LOOP ────────────────────────────────────────
+    function schnLoop() {
+      fogT++;
+      drawInnerFog();
+      requestAnimationFrame(schnLoop);
+    }
+    schnLoop();
+  })();
 </script>
 </body>
 </html>
