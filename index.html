@@ -608,6 +608,13 @@
       animation-play-state: paused !important;
     }
 
+    /* Label disappear on click */
+    .schnappchen-label.label-gone {
+      opacity: 0 !important;
+      transform: rotate(-27deg) translateY(-30px) scale(0.7) !important;
+      transition: opacity 1.8s ease, transform 1.8s ease !important;
+    }
+
     /* ── SCHNÄPPCHEN diagonal label ── */
     .schnappchen-label {
       position: relative;
@@ -1250,6 +1257,10 @@
       fogDiv.querySelectorAll('.fog-particle').forEach(function(p) {
         p.classList.add('fog-rise');
       });
+      // 2. Fade + float the label away
+      var label = fogDiv.querySelector('.schnappchen-label');
+      if (label) label.classList.add('label-gone');
+
       // Disable click after first trigger
       fogDiv.style.pointerEvents = 'none';
 
