@@ -36,8 +36,17 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 0;
+      z-index: 1;
       opacity: 0.45;
+    }
+
+    /* ─── FOG CANVAS (beneath particles) ─── */
+    .fog-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.82;
     }
 
     /* ─── HERO ─── */
@@ -629,6 +638,7 @@
   </div>
 </div>
 
+<canvas class="fog-canvas"   id="fogCanvas"></canvas>
 <canvas class="steam-canvas" id="steamCanvas"></canvas>
 
 <!-- HERO -->
@@ -954,94 +964,164 @@
   const AMB_COUNT = window.innerWidth < 700 ? 60 : 160;
   const ambient = Array.from({ length: AMB_COUNT }, () => mkParticle(true));
 
-  // ── FOG / STEAM SYSTEM ────────────────────────────────────────
-  // Canvas is position:fixed so fog lives in VIEWPORT space — no scroll offset.
-  // Scroll creates turbulence / swirl only; no net vertical push.
-  const isMobile   = window.innerWidth < 700;
-  const FOG_COUNT  = isMobile ? 14 : 28;
-  let fogTurb      = 0;   // turbulence magnitude driven by scroll speed
+  // ── 3D VOLUMETRIC FOG SYSTEM ──────────────────────────────────
+  const fogCanvas  = document.getElementById('fogCanvas');
+  const fctx       = fogCanvas.getContext('2d');
+  fogCanvas.width  = W;
+  fogCanvas.height = H;
 
-  function mkFog(scatter) {
-    const r   = Math.random() * 240 + 300;   // 300–540 px
-    const col = Math.random();               // 0=cool grey, 1=warm amber
+  window.addEventListener('resize', () => {
+    fogCanvas.width  = innerWidth;
+    fogCanvas.height = innerHeight;
+  });
+
+  const isMobile = window.innerWidth < 700;
+  let fogTurb    = 0;
+
+  // 4 depth layers: 0=far(cool/small/slow) → 3=near(warm/huge/fast)
+  const LAYERS = [
+    { n: isMobile?3:6,  rMn:80,  rMx:190, sMn:0.008,sMx:0.025, oMn:0.04,oMx:0.08, par:0.003, warm:0.05 },
+    { n: isMobile?4:9,  rMn:200, rMx:340, sMn:0.018,sMx:0.055, oMn:0.06,oMx:0.12, par:0.010, warm:0.35 },
+    { n: isMobile?4:8,  rMn:330, rMx:500, sMn:0.035,sMx:0.090, oMn:0.08,oMx:0.16, par:0.020, warm:0.70 },
+    { n: isMobile?2:5,  rMn:480, rMx:680, sMn:0.055,sMx:0.120, oMn:0.10,oMx:0.20, par:0.032, warm:1.00 },
+  ];
+
+  function mkBlob(li, scatter) {
+    const L  = LAYERS[li];
+    const r  = Math.random() * (L.rMx - L.rMn) + L.rMn;
+    const op = Math.random() * (L.oMx - L.oMn) + L.oMn;
     return {
-      x:      Math.random() * (W + r * 2) - r,
-      // scatter=true: anywhere on screen; false: respawn at bottom edge
-      y:      scatter ? Math.random() * H : H + r * 0.5,
-      r,
-      vx:     (Math.random() - 0.5) * 0.10,
-      vy:     -(Math.random() * 0.08 + 0.02),  // very slow rise 0.02–0.10
-      wobT:   Math.random() * Math.PI * 2,
-      wobTS:  (Math.random() - 0.5) * 0.003,
-      wobX:   Math.random() * Math.PI * 2,
-      wobXS:  (Math.random() - 0.5) * 0.004,
-      col,
-      op:     Math.random() * 0.10 + 0.07,    // 0.07–0.17 target opacity
-      curOp:  scatter ? (Math.random() * 0.10 + 0.07) : 0,
-      decay:  Math.random() * 0.000012 + 0.000005, // very slow fade
+      li, r,
+      x:     Math.random() * (W + r * 2) - r,
+      y:     scatter ? Math.random() * H : H + r * 0.6,
+      vx:    (Math.random() - 0.5) * 0.09,
+      vy:    -(Math.random() * (L.sMx - L.sMn) + L.sMn),
+      wT:    Math.random() * Math.PI * 2,
+      wTS:   (Math.random() - 0.5) * 0.003,
+      wX:    Math.random() * Math.PI * 2,
+      wXS:   (Math.random() - 0.5) * 0.004,
+      op,
+      curOp: scatter ? op * Math.random() : 0,
+      decay: Math.random() * 0.000010 + 0.000004,
     };
   }
 
-  const fogBlobs = Array.from({ length: FOG_COUNT }, () => mkFog(true));
+  // Build all blobs across all layers
+  let allBlobs = [];
+  LAYERS.forEach((_, li) => {
+    for (let i = 0; i < LAYERS[li].n; i++) allBlobs.push(mkBlob(li, true));
+  });
 
-  function updateFog(f, i) {
-    // Mouse / finger push — gently parts the fog
-    const pr = f.r * 0.75;
-    const dx = f.x - mx, dy = f.y - my;
+  // God rays — thin cones of amber light from top-center
+  const RAY_COUNT = isMobile ? 3 : 6;
+  const rays = Array.from({ length: RAY_COUNT }, (_, i) => ({
+    angle:  -Math.PI / 2 + (i / (RAY_COUNT - 1) - 0.5) * 1.1,
+    spread: Math.random() * 0.07 + 0.04,
+    op:     Math.random() * 0.022 + 0.008,
+    pulse:  Math.random() * Math.PI * 2,
+    pSpd:   Math.random() * 0.007 + 0.003,
+    len:    Math.random() * 0.3 + 0.6, // fraction of H
+  }));
+
+  function updateBlob(b, i) {
+    const L = LAYERS[b.li];
+
+    // Mouse parallax — near layers part more than far
+    const dx = b.x - mx, dy = b.y - my;
     const dd = Math.sqrt(dx * dx + dy * dy);
+    const pr = b.r * 0.8;
     if (dd < pr && dd > 1) {
-      const s = ((pr - dd) / pr) * 0.35;
-      f.vx += (dx / dd) * s;
-      f.vy += (dy / dd) * s;
+      const s = ((pr - dd) / pr) * (0.25 + b.li * 0.12);
+      b.vx += (dx / dd) * s;
+      b.vy += (dy / dd) * s * 0.5;
     }
 
-    // Scroll turbulence — random swirl, NO net downward push
-    // fogTurb > 0 when scrolling in either direction
+    // Scroll turbulence — pure random swirl, no net direction
     if (fogTurb > 0.01) {
-      const angle = Math.random() * Math.PI * 2;
-      f.vx += Math.cos(angle) * fogTurb * 0.07;
-      f.vy += Math.sin(angle) * fogTurb * 0.035; // half strength on Y
+      const a = Math.random() * Math.PI * 2;
+      b.vx += Math.cos(a) * fogTurb * (0.04 + b.li * 0.02);
+      b.vy += Math.sin(a) * fogTurb * (0.02 + b.li * 0.01);
     }
 
-    // Velocity damping — fog is heavy and slow
-    f.vx *= 0.975;
-    f.vy *= 0.975;
+    b.vx *= 0.976; b.vy *= 0.976;
+    b.wT += b.wTS; b.wX += b.wXS;
+    b.x += b.vx + Math.sin(b.wX) * 0.5 * (1 + b.li * 0.3);
+    b.y += b.vy + Math.sin(b.wT) * 0.18;
 
-    // Organic wobble
-    f.wobT += f.wobTS;
-    f.wobX += f.wobXS;
-    f.x += f.vx + Math.sin(f.wobX) * 0.55;
-    f.y += f.vy + Math.sin(f.wobT) * 0.20;
+    if (b.curOp < b.op) b.curOp = Math.min(b.op, b.curOp + 0.00025);
+    b.curOp -= b.decay;
 
-    // Fade in / out
-    if (f.curOp < f.op) f.curOp = Math.min(f.op, f.curOp + 0.0003);
-    f.curOp -= f.decay;
+    if (b.x < -b.r)    b.x = W + b.r;
+    if (b.x > W + b.r) b.x = -b.r;
 
-    // Horizontal wrap so fog is always present
-    if (f.x < -f.r)    f.x = W + f.r;
-    if (f.x > W + f.r) f.x = -f.r;
-
-    // Respawn from bottom when faded or escaped top
-    if (f.curOp <= 0 || f.y < -f.r * 2) {
-      fogBlobs[i] = mkFog(false);
+    if (b.curOp <= 0 || b.y < -b.r * 2) {
+      allBlobs[i] = mkBlob(b.li, false);
     }
   }
 
-  function drawFog(f) {
-    if (f.curOp <= 0.002) return;
-    const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
-    // Blend warm amber and cool grey based on col
-    const rC = Math.round(175 + f.col * 40);
-    const gC = Math.round(158 + f.col * 10);
-    const bC = Math.round(138 - f.col * 20);
-    g.addColorStop(0,    `rgba(${rC},${gC},${bC},${f.curOp})`);
-    g.addColorStop(0.35, `rgba(${rC},${gC},${bC},${f.curOp * 0.55})`);
-    g.addColorStop(0.7,  `rgba(${rC},${gC},${bC},${f.curOp * 0.15})`);
+  function drawFogLayer(b) {
+    if (b.curOp < 0.002) return;
+    const L = LAYERS[b.li];
+    // Colour: interpolate cool grey → warm amber by layer warmth + y depth
+    const yFac = Math.max(0, Math.min(1, (b.y / H) * 0.5 + 0.5));
+    const wm   = L.warm * 0.7 + yFac * 0.3;
+    const rC   = Math.round(155 + wm * 68);
+    const gC   = Math.round(148 + wm * 14);
+    const bC   = Math.round(138 - wm * 48);
+
+    // Soft blur for volumetric look on near layers
+    if (b.li >= 2) fctx.filter = `blur(${b.r * 0.08}px)`;
+
+    const g = fctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    g.addColorStop(0,    `rgba(${rC},${gC},${bC},${b.curOp})`);
+    g.addColorStop(0.30, `rgba(${rC},${gC},${bC},${b.curOp * 0.65})`);
+    g.addColorStop(0.65, `rgba(${rC},${gC},${bC},${b.curOp * 0.22})`);
     g.addColorStop(1,    'transparent');
-    ctx.beginPath();
-    ctx.fillStyle = g;
-    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-    ctx.fill();
+    fctx.beginPath();
+    fctx.fillStyle = g;
+    fctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    fctx.fill();
+
+    if (b.li >= 2) fctx.filter = 'none';
+  }
+
+  function drawGodRays() {
+    const ox = W * 0.5, oy = -H * 0.05; // light origin top-center
+    rays.forEach(ray => {
+      ray.pulse += ray.pSpd;
+      const op = ray.op * (0.7 + 0.3 * Math.sin(ray.pulse));
+      const len = H * ray.len;
+      const ex  = ox + Math.cos(ray.angle) * len;
+      const ey  = oy + Math.sin(ray.angle) * len;
+      const g   = fctx.createLinearGradient(ox, oy, ex, ey);
+      g.addColorStop(0,   `rgba(255,185,80,${op})`);
+      g.addColorStop(0.4, `rgba(220,140,50,${op * 0.55})`);
+      g.addColorStop(1,   'transparent');
+
+      // Draw as a wide triangle
+      const hw = len * ray.spread;
+      const px  = Math.cos(ray.angle + Math.PI / 2);
+      const py  = Math.sin(ray.angle + Math.PI / 2);
+      fctx.beginPath();
+      fctx.moveTo(ox, oy);
+      fctx.lineTo(ex + px * hw, ey + py * hw);
+      fctx.lineTo(ex - px * hw, ey - py * hw);
+      fctx.closePath();
+      fctx.fillStyle = g;
+      fctx.fill();
+    });
+  }
+
+  function renderFog() {
+    fctx.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
+
+    // God rays first (deepest layer)
+    drawGodRays();
+
+    // Fog layers back-to-front (li=0 first → li=3 last on top)
+    for (let li = 0; li < 4; li++) {
+      allBlobs.filter(b => b.li === li).forEach(b => drawFogLayer(b));
+    }
   }
 
   function updateAmbient(p, i) {
@@ -1108,10 +1188,14 @@
     scrollVel *= 0.85;
     fogTurb   *= 0.90;   // turbulence settles slowly — lingers like disturbed steam
 
-    ctx.clearRect(0, 0, W, H);
+    // Update all fog blobs (physics only)
+    allBlobs.forEach((b, i) => updateBlob(b, i));
 
-    // Draw fog first — particles and embers float on top through the mist
-    fogBlobs.forEach((f, i) => { updateFog(f, i); drawFog(f); });
+    // Render fog to dedicated canvas (back-to-front layers + god rays)
+    renderFog();
+
+    // Render ember/dust particles on steam canvas (floats above fog)
+    ctx.clearRect(0, 0, W, H);
     ambient.forEach((p, i) => { updateAmbient(p, i); drawAmbient(p); });
 
     requestAnimationFrame(frame);
