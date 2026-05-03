@@ -960,7 +960,7 @@
     return p;
   }
 
-  const AMB_COUNT = window.innerWidth < 700 ? 60 : 160;
+  const AMB_COUNT = window.innerWidth < 700 ? 25 : 100;
   const ambient = Array.from({ length: AMB_COUNT }, () => mkParticle(true));
 
   // ── 3D VOLUMETRIC FOG SYSTEM ──────────────────────────────────
@@ -979,10 +979,10 @@
 
   // 4 depth layers: 0=far(cool/small/slow) → 3=near(warm/huge/fast)
   const LAYERS = [
-    { n: isMobile?3:6,  rMn:80,  rMx:190, sMn:0.008,sMx:0.025, oMn:0.04,oMx:0.08, par:0.003, warm:0.05 },
-    { n: isMobile?4:9,  rMn:200, rMx:340, sMn:0.018,sMx:0.055, oMn:0.06,oMx:0.12, par:0.010, warm:0.35 },
-    { n: isMobile?4:8,  rMn:330, rMx:500, sMn:0.035,sMx:0.090, oMn:0.08,oMx:0.16, par:0.020, warm:0.70 },
-    { n: isMobile?2:5,  rMn:480, rMx:680, sMn:0.055,sMx:0.120, oMn:0.10,oMx:0.20, par:0.032, warm:1.00 },
+    { n: isMobile?2:6,  rMn:80,  rMx:190, sMn:0.008,sMx:0.025, oMn:0.04,oMx:0.08, par:0.003, warm:0.05 },
+    { n: isMobile?2:9,  rMn:200, rMx:340, sMn:0.018,sMx:0.055, oMn:0.06,oMx:0.12, par:0.010, warm:0.35 },
+    { n: isMobile?2:8,  rMn:330, rMx:500, sMn:0.035,sMx:0.090, oMn:0.08,oMx:0.16, par:0.020, warm:0.70 },
+    { n: isMobile?1:5,  rMn:480, rMx:680, sMn:0.055,sMx:0.120, oMn:0.10,oMx:0.20, par:0.032, warm:1.00 },
   ];
 
   function mkBlob(li, scatter) {
@@ -1075,9 +1075,6 @@
     const gC   = Math.round(148 + wm * 14);
     const bC   = Math.round(138 - wm * 48);
 
-    // Soft blur for volumetric look on near layers
-    if (b.li >= 2) fctx.filter = `blur(${b.r * 0.08}px)`;
-
     const g = fctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
     g.addColorStop(0,    `rgba(${rC},${gC},${bC},${b.curOp})`);
     g.addColorStop(0.30, `rgba(${rC},${gC},${bC},${b.curOp * 0.65})`);
@@ -1087,8 +1084,6 @@
     fctx.fillStyle = g;
     fctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     fctx.fill();
-
-    if (b.li >= 2) fctx.filter = 'none';
   }
 
   function drawGodRays() {
@@ -1184,23 +1179,21 @@
     ctx.fill();
   }
 
-  // ── RENDER LOOP ───────────────────────────────────────────────
+  // ── RENDER LOOP — throttled to 30fps on mobile ───────────────
+  const TARGET_FPS = isMobile ? 30 : 60;
+  const FRAME_MS   = 1000 / TARGET_FPS;
   let prevTS = 0;
   function frame(ts) {
-    const dt = Math.min(ts - prevTS, 50);
+    if (ts - prevTS < FRAME_MS - 1) { requestAnimationFrame(frame); return; }
     prevTS = ts;
 
     tvx *= 0.88; tvy *= 0.88;
     scrollVel *= 0.85;
-    fogTurb   *= 0.90;   // turbulence settles slowly — lingers like disturbed steam
+    fogTurb   *= 0.90;
 
-    // Update all fog blobs (physics only)
     allBlobs.forEach((b, i) => updateBlob(b, i));
-
-    // Render fog to dedicated canvas (back-to-front layers + god rays)
     renderFog();
 
-    // Render ember/dust particles on steam canvas (floats above fog)
     ctx.clearRect(0, 0, W, H);
     ambient.forEach((p, i) => { updateAmbient(p, i); drawAmbient(p); });
 
@@ -1242,88 +1235,7 @@
   (function initSchnappchen() {
     const fogDiv = document.getElementById('schnappchen-fog');
     if (!fogDiv) return;
-
-    // ── INNER FOG CANVAS ───────────────────────────────────────
-    const fc = document.createElement('canvas');
-    fc.className = 'fog-canvas-inner';
-    fogDiv.insertBefore(fc, fogDiv.firstChild);
-    const fctx = fc.getContext('2d');
-
-    function resizeFogCanvas() {
-      const r = fogDiv.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) {
-        fc.width  = Math.round(r.width);
-        fc.height = Math.round(r.height);
-      }
-    }
-    resizeFogCanvas();
-    window.addEventListener('resize', resizeFogCanvas);
-
-    // Two-layer cloud system:
-    // Layer A — large diffuse base masses (cover full area, low opacity)
-    // Layer B — smaller cloud puffs (visible cloud shapes, higher opacity)
-    const BLOBS_A = [
-      { xF:0.18, yF:0.25, rxF:0.70, ryF:0.55, op:0.38, ph:0.00, sp:0.00060 },
-      { xF:0.75, yF:0.60, rxF:0.65, ryF:0.70, op:0.35, ph:1.80, sp:0.00075 },
-      { xF:0.42, yF:0.85, rxF:0.72, ryF:0.50, op:0.36, ph:0.90, sp:0.00055 },
-      { xF:0.58, yF:0.15, rxF:0.60, ryF:0.65, op:0.34, ph:2.50, sp:0.00085 },
-    ];
-    const BLOBS_B = [
-      { xF:0.12, yF:0.20, rxF:0.28, ryF:0.24, op:0.80, ph:0.50, sp:0.00120 },
-      { xF:0.65, yF:0.15, rxF:0.32, ryF:0.28, op:0.78, ph:1.20, sp:0.00100 },
-      { xF:0.30, yF:0.50, rxF:0.30, ryF:0.26, op:0.75, ph:2.10, sp:0.00090 },
-      { xF:0.80, yF:0.40, rxF:0.26, ryF:0.30, op:0.82, ph:0.80, sp:0.00130 },
-      { xF:0.15, yF:0.78, rxF:0.34, ryF:0.25, op:0.76, ph:3.00, sp:0.00080 },
-      { xF:0.55, yF:0.68, rxF:0.28, ryF:0.32, op:0.72, ph:1.60, sp:0.00115 },
-      { xF:0.88, yF:0.75, rxF:0.30, ryF:0.27, op:0.80, ph:2.80, sp:0.00095 },
-      { xF:0.42, yF:0.32, rxF:0.24, ryF:0.28, op:0.74, ph:0.30, sp:0.00140 },
-      { xF:0.72, yF:0.88, rxF:0.32, ryF:0.26, op:0.78, ph:1.90, sp:0.00070 },
-    ];
-
-    let fogT = 0;
-
-    function drawInnerFog() {
-      // Auto-resize canvas each frame if layout changed
-      const rect = fogDiv.getBoundingClientRect();
-      if (rect.width > 0 && (fc.width !== Math.round(rect.width) || fc.height !== Math.round(rect.height))) {
-        fc.width  = Math.round(rect.width);
-        fc.height = Math.round(rect.height);
-      }
-      const W = fc.width, H = fc.height;
-      if (!W || !H) return;
-      fctx.clearRect(0, 0, W, H);
-
-      function drawBlob(b, blur) {
-        const cx = (b.xF + Math.sin(fogT * b.sp + b.ph)       * 0.08) * W;
-        const cy = (b.yF + Math.cos(fogT * b.sp * 0.7 + b.ph) * 0.07) * H;
-        const rx  = b.rxF * W;
-        const ry  = b.ryF * H;
-        const r   = Math.max(rx, ry);
-
-        fctx.save();
-        if (blur) fctx.filter = 'blur(' + blur + 'px)';
-        fctx.translate(cx, cy);
-        fctx.scale(rx / r, ry / r);
-
-        const g = fctx.createRadialGradient(0, 0, 0, 0, 0, r);
-        g.addColorStop(0,    'rgba(248,245,241,' + b.op + ')');
-        g.addColorStop(0.25, 'rgba(238,234,228,' + (b.op * 0.85) + ')');
-        g.addColorStop(0.55, 'rgba(224,220,213,' + (b.op * 0.55) + ')');
-        g.addColorStop(0.80, 'rgba(210,206,199,' + (b.op * 0.25) + ')');
-        g.addColorStop(1,    'transparent');
-
-        fctx.beginPath();
-        fctx.arc(0, 0, r, 0, Math.PI * 2);
-        fctx.fillStyle = g;
-        fctx.fill();
-        fctx.restore();
-      }
-
-      // Layer A: large diffuse base (heavy blur → soft haze covering full image)
-      BLOBS_A.forEach(function(b) { drawBlob(b, 28); });
-      // Layer B: cloud puffs (mild blur → visible organic cloud shapes)
-      BLOBS_B.forEach(function(b) { drawBlob(b, 10); });
-    }
+    // CSS fog bands handle the visual — no canvas needed here.
 
     // ── CLICK: DISMISS FOG + SPAWN RISING CLOUDS ───────────────
     fogDiv.addEventListener('click', function() {
@@ -1354,13 +1266,6 @@
       }
     });
 
-    // ── FOG CANVAS LOOP ────────────────────────────────────────
-    function schnLoop() {
-      fogT++;
-      drawInnerFog();
-      requestAnimationFrame(schnLoop);
-    }
-    schnLoop();
   })();
 
   // ── SERVICE WORKER ────────────────────────────────────────────
