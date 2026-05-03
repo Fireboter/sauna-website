@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>S-A-U-N-A Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0b09;
+      --card: #161210;
+      --amber: #e8820c;
+      --gold: #ffd060;
+      --ember: #c0390a;
+      --text: #f0e8d8;
+      --muted: #8a7a65;
+      --border: rgba(232,130,12,0.2);
+      --input-bg: #1c1814;
+      --danger: #c0392b;
+      --success: #27ae60;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100svh;
+    }
+
+    /* ─── LOGIN ─── */
+    .login-screen {
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: radial-gradient(ellipse at center bottom,
+        rgba(232,130,12,0.07) 0%, transparent 60%);
+    }
+
+    .login-box { width: 100%; max-width: 340px; text-align: center; }
+
+    /* mini SVG logo in login */
+    .login-logo-svg {
+      width: 100px;
+      margin: 0 auto 1.5rem;
+      filter: drop-shadow(0 0 16px rgba(232,130,12,0.4));
+    }
+
+    .login-sub {
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 2.5rem;
+    }
+
+    .login-field { margin-bottom: 1rem; }
+
+    .login-field input {
+      width: 100%;
+      padding: 1rem 1.2rem;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .login-field input:focus { border-color: var(--amber); }
+
+    .login-error { font-size: 0.82rem; color: var(--danger); margin-bottom: 1rem; min-height: 1.2rem; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 1rem;
+      background: var(--amber);
+      color: #0a0806;
+      border: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:hover  { background: #f09020; }
+
+    /* ─── ADMIN PANEL ─── */
+    .admin-screen { display: none; }
+    .admin-screen.visible { display: block; }
+
+    .admin-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-header-logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+    }
+
+    .admin-header-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.28em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      padding: 0.45rem 0.9rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .btn-logout:hover { color: var(--text); border-color: var(--muted); }
+
+    .preview-link {
+      text-align: center;
+      padding: 0.65rem;
+      background: rgba(232,130,12,0.04);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-link a {
+      font-size: 0.78rem;
+      color: var(--amber);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+
+    .preview-link a:hover { text-decoration: underline; }
+
+    .admin-body { padding: 1.2rem 1.2rem 6rem; max-width: 580px; margin: 0 auto; }
+
+    /* ─── DAY CARD ─── */
+    .day-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      margin-bottom: 1.2rem;
+      overflow: hidden;
+    }
+
+    .day-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 1.1rem 1.4rem;
+      border-bottom: 1px solid rgba(232,130,12,0.1);
+    }
+
+    .day-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      background: var(--amber);
+      color: #0a0806;
+      padding: 0.28rem 0.55rem;
+      text-transform: uppercase;
+    }
+
+    .day-name { font-size: 0.8rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
+
+    .day-card-body { padding: 1.2rem 1.4rem; }
+
+    /* ─── PHOTO UPLOAD ─── */
+    .photo-section { margin-bottom: 1.2rem; }
+
+    .form-label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.28em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Photo preview — 3:4 */
+    .photo-preview-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: var(--input-bg);
+      border: 1px dashed rgba(232,130,12,0.25);
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+
+    .photo-preview-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .photo-preview-img.loaded { display: block; }
+
+    .photo-preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--muted);
+    }
+
+    .photo-preview-placeholder.hidden { display: none; }
+
+    .photo-preview-placeholder-icon { font-size: 2rem; opacity: 0.3; }
+    .photo-preview-placeholder-text { font-size: 0.75rem; letter-spacing: 0.1em; }
+
+    /* Day legend overlay on photo */
+    .photo-preview-legend {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0.7rem 0.9rem;
+      background: linear-gradient(to top, rgba(10,8,6,0.9) 0%, transparent 100%);
+      display: none;
+    }
+
+    .photo-preview-legend.visible { display: block; }
+
+    .photo-preview-legend-badge {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      background: var(--amber);
+      color: #0a0806;
+      padding: 0.2rem 0.45rem;
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+    }
+
+    .photo-preview-legend-name { font-size: 0.88rem; font-weight: 600; }
+
+    .photo-buttons { display: flex; gap: 0.6rem; }
+
+    .btn-upload {
+      flex: 1;
+      padding: 0.7rem 0.8rem;
+      background: rgba(232,130,12,0.1);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-align: center;
+    }
+
+    .btn-upload:hover { background: rgba(232,130,12,0.18); }
+
+    .btn-remove-photo {
+      padding: 0.7rem 0.75rem;
+      background: none;
+      border: 1px solid rgba(192,57,10,0.3);
+      color: rgba(192,57,10,0.7);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-remove-photo:hover { color: var(--danger); border-color: var(--danger); }
+
+    .btn-crop-existing {
+      padding: 0.7rem 0.8rem;
+      background: rgba(232,130,12,0.12);
+      border: 1px solid rgba(232,130,12,0.35);
+      color: #e8820c;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .btn-crop-existing:hover { background: rgba(232,130,12,0.22); }
+
+    input[type="file"] { display: none; }
+
+    /* ─── CROP MODAL ─── */
+    .crop-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(10,8,6,0.92);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      gap: 1rem;
+    }
+
+    .crop-modal.open { display: flex; }
+
+    .crop-modal-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      color: var(--amber);
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .crop-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.04em;
+    }
+
+    /* The crop viewport — fixed 3:4 window */
+    .crop-viewport {
+      position: relative;
+      width: min(320px, 80vw);
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      border: 2px solid var(--amber);
+      box-shadow: 0 0 0 9999px rgba(10,8,6,0.7);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .crop-viewport:active { cursor: grabbing; }
+
+    /* The actual image inside the viewport — transforms applied by JS */
+    .crop-img {
+      position: absolute;
+      top: 0; left: 0;
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+
+    /* Corner guides */
+    .crop-viewport::before,
+    .crop-viewport::after {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      border-color: var(--amber);
+      border-style: solid;
+      z-index: 2;
+    }
+
+    .crop-viewport::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
+    .crop-viewport::after  { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+    .crop-actions { display: flex; gap: 0.8rem; width: min(320px, 80vw); }
+
+    .btn-crop-confirm {
+      flex: 1;
+      padding: 0.85rem;
+      background: #e8820c !important;
+      color: #0a0806 !important;
+      border: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: 0;
+    }
+
+    .btn-crop-cancel {
+      padding: 0.85rem 1.1rem;
+      background: transparent !important;
+      border: 1px solid rgba(232,130,12,0.3);
+      color: #8a7a65 !important;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: 0;
+    }
+
+    .crop-zoom-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      width: min(320px, 80vw);
+    }
+
+    .crop-zoom-bar label {
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      color: #e8820c;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .crop-zoom-bar input[type=range] {
+      flex: 1;
+      accent-color: #e8820c;
+      cursor: pointer;
+      height: 4px;
+    }
+
+    /* ─── TEXT FIELDS ─── */
+    .form-group { margin-bottom: 1rem; }
+
+    .form-input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: var(--input-bg);
+      border: 1px solid rgba(232,130,12,0.15);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+
+    .form-input:focus { border-color: var(--amber); }
+    textarea.form-input { min-height: 76px; line-height: 1.6; }
+
+    /* ─── SAVE BAR ─── */
+    .save-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 0.9rem 1.2rem;
+      display: flex;
+      gap: 0.7rem;
+      align-items: center;
+      z-index: 30;
+    }
+
+    .btn-save {
+      flex: 1;
+      padding: 0.95rem;
+      background: var(--amber);
+      color: #0a0806;
+      border: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn-save:active  { transform: scale(0.97); }
+    .btn-save:hover   { background: #f09020; }
+    .btn-save.saved   { background: var(--success); }
+
+    .btn-reset {
+      padding: 0.95rem 1rem;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .btn-reset:hover { color: var(--text); }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed;
+      bottom: 5.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--success);
+      color: #fff;
+      padding: 0.7rem 1.4rem;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Storage warning */
+    .storage-warn {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 0.5rem 1.2rem;
+      background: rgba(232,130,12,0.03);
+      border-bottom: 1px solid rgba(232,130,12,0.08);
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo-svg">
+      <svg viewBox="0 0 601 385" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="fg2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#ffd060"/>
+            <stop offset="25%"  stop-color="#f5a020"/>
+            <stop offset="55%"  stop-color="#c84010"/>
+            <stop offset="100%" stop-color="#6a1002"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#fg2)" fill-rule="evenodd" d="M 30,18 L 302,369 L 575,19 L 554,18 L 301,340 L 51,18 Z M 416,18 L 416,99 L 417,100 L 438,100 L 439,99 L 439,80 L 441,78 L 455,78 L 456,79 L 456,98 L 457,100 L 478,100 L 479,99 L 479,18 Z M 198,18 L 198,99 L 199,100 L 220,100 L 221,99 L 221,81 L 223,78 L 237,78 L 239,80 L 239,99 L 240,100 L 260,100 L 261,99 L 261,18 Z M 271,18 L 271,99 L 272,100 L 333,100 L 334,99 L 334,18 L 311,18 L 311,82 L 309,84 L 296,84 L 294,82 L 294,18 Z M 344,18 L 344,99 L 345,100 L 365,100 L 366,99 L 366,36 L 368,34 L 383,34 L 384,35 L 384,99 L 385,100 L 406,100 L 407,99 L 407,18 Z M 126,18 L 126,67 L 163,67 L 166,69 L 166,82 L 164,84 L 126,84 L 126,99 L 127,100 L 189,100 L 189,52 L 188,51 L 150,51 L 149,50 L 149,36 L 151,34 L 189,34 L 189,18 Z M 224,34 L 236,34 L 239,37 L 239,59 L 238,60 L 238,61 L 237,62 L 223,62 L 222,61 L 222,60 L 221,59 L 221,37 Z M 441,34 L 454,34 L 456,36 L 456,60 L 454,62 L 441,62 L 439,60 L 439,36 Z"/>
+      </svg>
+    </div>
+    <div class="login-sub">Admin · Programm</div>
+    <div class="login-field">
+      <input type="password" id="pwInput" placeholder="Passwort" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-primary" onclick="doLogin()">Anmelden</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-screen" id="adminScreen">
+  <div class="admin-header">
+    <div>
+      <div class="admin-header-logo">S-A-U-N-A</div>
+      <div class="admin-header-label">Programm bearbeiten</div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Abmelden</button>
+  </div>
+
+  <div class="preview-link">
+    <a href="index.html" target="_blank">→ Website-Vorschau öffnen</a>
+  </div>
+
+  <div class="storage-warn" id="storageWarn" style="display:none">
+    ⚠️ Speicher fast voll — Fotos werden komprimiert.
+  </div>
+
+  <div class="admin-body" id="adminBody"></div>
+
+  <div class="save-bar">
+    <button class="btn-reset" onclick="resetDefaults()">Reset</button>
+    <button class="btn-save" id="saveBtn" onclick="saveProgram()">Alles speichern</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Gespeichert</div>
+
+<!-- CROP MODAL -->
+<div class="crop-modal" id="cropModal">
+  <div class="crop-modal-title">Foto zuschneiden</div>
+  <div class="crop-hint">Ziehen zum Verschieben</div>
+  <div class="crop-viewport" id="cropViewport">
+    <img class="crop-img" id="cropImg" alt="">
+  </div>
+  <div class="crop-zoom-bar">
+    <label>Zoom</label>
+    <input type="range" id="cropZoom" min="100" max="300" value="100" step="1">
+  </div>
+  <div class="crop-actions">
+    <button class="btn-crop-cancel" onclick="closeCrop()">Abbrechen</button>
+    <button class="btn-crop-confirm" onclick="confirmCrop()">Zuschneiden</button>
+  </div>
+</div>
+
+<script>
+  const DEFAULT_PASSWORD = 'sauna2025';
+  function getPassword() { return localStorage.getItem('sauna_password') || DEFAULT_PASSWORD; }
+
+  const DATA_VERSION = "hf2";
+
+  const DEFAULT_PROGRAM = [
+    { day: "Donnerstag", dayShort: "DO", name: "Hitzefrei",
+      desc: "Der entspannte Wochenstart. Gute Musik, wenig Regeln, viel Hitze.",
+      photo: "img/thursday_hf2.jpg",
+      link: "https://www.instagram.com/hitzefrei.sauna/" },
+    { day: "Freitag",    dayShort: "FR", name: "Dampfbad",
+      desc: "Dichter Dampf, intensive Atmosphäre. Der Abend für alle, die tiefer eintauchen wollen.",
+      photo: "img/friday_hf2.jpg",
+      link: null },
+    { day: "Samstag",    dayShort: "SA", name: "Sauna Gemischt",
+      desc: "Das volle Programm. Gemischte Runden, offene Türen, unvergessliche Nächte.",
+      photo: "img/saturday_hf2.jpg",
+      link: null }
+  ];
+
+  // ── AUTH ──────────────────────────────────────────────────────
+  function doLogin() {
+    const val = document.getElementById('pwInput').value;
+    if (val === getPassword()) {
+      sessionStorage.setItem('sauna_auth', '1');
+      showAdmin();
+    } else {
+      document.getElementById('loginError').textContent = 'Falsches Passwort.';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwInput').focus();
+    }
+  }
+
+  document.getElementById('pwInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  function logout() { sessionStorage.removeItem('sauna_auth'); location.reload(); }
+
+  if (sessionStorage.getItem('sauna_auth') === '1') showAdmin();
+
+  function showAdmin() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminScreen').classList.add('visible');
+    renderAdminCards();
+    checkStorage();
+  }
+
+  // ── DATA ──────────────────────────────────────────────────────
+  function loadProgram() {
+    try {
+      if (localStorage.getItem('sauna_data_version') !== DATA_VERSION) {
+        localStorage.removeItem('sauna_program');
+        localStorage.setItem('sauna_data_version', DATA_VERSION);
+      }
+      const s = localStorage.getItem('sauna_program');
+      if (!s) return JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
+      const p = JSON.parse(s);
+      return p.map((item, i) => ({ ...DEFAULT_PROGRAM[i], ...item }));
+    } catch { return JSON.parse(JSON.stringify(DEFAULT_PROGRAM)); }
+  }
+
+  // ── IMAGE COMPRESSION ────────────────────────────────────────
+  function compressDataUrl(dataUrl, maxW = 1100, quality = 0.82) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.src = dataUrl;
+    });
+  }
+
+  function checkStorage() {
+    try {
+      let used = 0;
+      for (let k in localStorage) used += (localStorage[k] || '').length;
+      const pct = used / (5 * 1024 * 1024);
+      document.getElementById('storageWarn').style.display = pct > 0.65 ? 'block' : 'none';
+    } catch {}
+  }
+
+  // ── CROP STATE ────────────────────────────────────────────────
+  let _cropIdx = null;
+  let _cropNaturalW = 0, _cropNaturalH = 0;
+  let _cropScale = 1;
+  let _cropBaseScale = 1;
+  let _cropX = 0, _cropY = 0;
+  let _vpW = 0, _vpH = 0;
+  let _isDragging = false, _lastX = 0, _lastY = 0;
+  let _cropSrc = '';
+
+  function openCrop(idx, dataUrl) {
+    _cropIdx = idx;
+    _cropSrc = dataUrl;
+    const modal = document.getElementById('cropModal');
+    const zoom  = document.getElementById('cropZoom');
+    zoom.value  = 100;
+    modal.classList.add('open');
+
+    // Wait two frames so the modal is painted and has real layout dimensions
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const vp    = document.getElementById('cropViewport');
+      const imgEl = document.getElementById('cropImg');
+      _vpW = vp.getBoundingClientRect().width;
+      _vpH = vp.getBoundingClientRect().height;
+
+      function initCrop() {
+        _cropNaturalW = imgEl.naturalWidth;
+        _cropNaturalH = imgEl.naturalHeight;
+        const scaleX = _vpW / _cropNaturalW;
+        const scaleY = _vpH / _cropNaturalH;
+        _cropBaseScale = Math.max(scaleX, scaleY);
+        _cropScale = _cropBaseScale;
+        _cropX = (_vpW - _cropNaturalW * _cropScale) / 2;
+        _cropY = (_vpH - _cropNaturalH * _cropScale) / 2;
+        clampCrop();
+        updateCropTransform();
+      }
+
+      imgEl.onload = initCrop;
+      // If same src and already loaded, onload won't fire — trigger manually
+      if (imgEl.src === dataUrl && imgEl.complete && imgEl.naturalWidth > 0) {
+        initCrop();
+      } else {
+        imgEl.src = dataUrl;
+      }
+    }));
+  }
+
+  function closeCrop() {
+    document.getElementById('cropModal').classList.remove('open');
+    _cropIdx = null;
+  }
+
+  function updateCropTransform() {
+    const imgEl = document.getElementById('cropImg');
+    imgEl.style.width     = (_cropNaturalW * _cropScale) + 'px';
+    imgEl.style.height    = (_cropNaturalH * _cropScale) + 'px';
+    imgEl.style.left      = _cropX + 'px';
+    imgEl.style.top       = _cropY + 'px';
+    imgEl.style.transform = 'none';
+  }
+
+  function clampCrop() {
+    const iw = _cropNaturalW * _cropScale;
+    const ih = _cropNaturalH * _cropScale;
+    if (_cropX > 0) _cropX = 0;
+    if (_cropY > 0) _cropY = 0;
+    if (_cropX + iw < _vpW) _cropX = _vpW - iw;
+    if (_cropY + ih < _vpH) _cropY = _vpH - ih;
+  }
+
+  // Attach drag & zoom once, reuse for every crop session
+  const _cvp = document.getElementById('cropViewport');
+  const _czoom = document.getElementById('cropZoom');
+
+  _cvp.addEventListener('mousedown', e => {
+    _isDragging = true; _lastX = e.clientX; _lastY = e.clientY;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!_isDragging) return;
+    _cropX += e.clientX - _lastX; _cropY += e.clientY - _lastY;
+    _lastX = e.clientX; _lastY = e.clientY;
+    clampCrop(); updateCropTransform();
+  });
+  window.addEventListener('mouseup', () => { _isDragging = false; });
+
+  _cvp.addEventListener('touchstart', e => {
+    _isDragging = true;
+    _lastX = e.touches[0].clientX; _lastY = e.touches[0].clientY;
+    e.preventDefault();
+  }, { passive: false });
+  _cvp.addEventListener('touchmove', e => {
+    if (!_isDragging) return;
+    _cropX += e.touches[0].clientX - _lastX;
+    _cropY += e.touches[0].clientY - _lastY;
+    _lastX = e.touches[0].clientX; _lastY = e.touches[0].clientY;
+    clampCrop(); updateCropTransform();
+    e.preventDefault();
+  }, { passive: false });
+  _cvp.addEventListener('touchend', () => { _isDragging = false; });
+
+  _czoom.addEventListener('input', () => {
+    const factor = _czoom.value / 100;
+    const newScale = _cropBaseScale * factor;
+    const cx = _vpW / 2, cy = _vpH / 2;
+    // Scale around viewport center
+    _cropX = cx - (cx - _cropX) * (newScale / _cropScale);
+    _cropY = cy - (cy - _cropY) * (newScale / _cropScale);
+    _cropScale = newScale;
+    clampCrop(); updateCropTransform();
+  });
+
+  function confirmCrop() {
+    const savedIdx = _cropIdx;
+    const src = _cropSrc;
+    const sx = -_cropX / _cropScale;
+    const sy = -_cropY / _cropScale;
+    const sw = _vpW / _cropScale;
+    const sh = _vpH / _cropScale;
+
+    closeCrop();
+
+    // Load a fresh image to draw (avoids any taint/cache issues)
+    const fresh = new Image();
+    fresh.onload = () => {
+      const OUT_W = 900, OUT_H = 1200;
+      const c = document.createElement('canvas');
+      c.width = OUT_W; c.height = OUT_H;
+      c.getContext('2d').drawImage(fresh, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+      setPhotoPreview(savedIdx, c.toDataURL('image/jpeg', 0.88));
+      checkStorage();
+    };
+    fresh.src = src;
+  }
+
+  // Allow cropping already-loaded preview images
+  function openCropFromPreview(idx) {
+    const img = document.getElementById(`prevImg_${idx}`);
+    if (!img || !img.classList.contains('loaded') || !img.src) return;
+    openCrop(idx, img.src);
+  }
+
+  // ── RENDER ADMIN CARDS ────────────────────────────────────────
+  function renderAdminCards() {
+    const program = loadProgram();
+    const body = document.getElementById('adminBody');
+
+    body.innerHTML = program.map((t, i) => `
+      <div class="day-card" id="card_${i}">
+        <div class="day-card-header">
+          <span class="day-badge">${t.dayShort}</span>
+          <span class="day-name">${t.day}</span>
+        </div>
+        <div class="day-card-body">
+
+          <!-- Photo section -->
+          <div class="photo-section">
+            <label class="form-label">Foto</label>
+            <div class="photo-preview-wrap" id="prevWrap_${i}">
+              <img class="photo-preview-img ${t.photo ? 'loaded' : ''}"
+                   id="prevImg_${i}"
+                   src="${t.photo || ''}"
+                   alt="">
+              <div class="photo-preview-placeholder ${t.photo ? 'hidden' : ''}" id="prevPh_${i}">
+                <div class="photo-preview-placeholder-icon">📷</div>
+                <div class="photo-preview-placeholder-text">Kein Foto</div>
+              </div>
+              <div class="photo-preview-legend ${t.photo ? 'visible' : ''}" id="prevLeg_${i}">
+                <span class="photo-preview-legend-badge">${t.dayShort}</span>
+                <div class="photo-preview-legend-name" id="prevLegName_${i}">${escHtml(t.name)}</div>
+              </div>
+            </div>
+            <div class="photo-buttons">
+              <label class="btn-upload" for="fileInput_${i}">
+                ${t.photo ? '📷 Ersetzen' : '📷 Hochladen'}
+              </label>
+              <input type="file" id="fileInput_${i}" accept="image/*"
+                     onchange="handlePhotoUpload(${i}, this)">
+              <button class="btn-crop-existing" onclick="openCropFromPreview(${i})"
+                      id="cropBtn_${i}"
+                      style="${t.photo ? '' : 'opacity:0.4;pointer-events:none'}">
+                ✂️ Zuschneiden
+              </button>
+              <button class="btn-remove-photo" onclick="removePhoto(${i})"
+                      style="${t.photo ? '' : 'opacity:0.4;pointer-events:none'}">
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <!-- Text fields -->
+          <div class="form-group">
+            <label class="form-label">Veranstaltungsname</label>
+            <input class="form-input" type="text" id="name_${i}"
+                   value="${escHtml(t.name)}" maxlength="60"
+                   oninput="updateLegendName(${i})">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Beschreibung</label>
+            <textarea class="form-input" id="desc_${i}" maxlength="200">${escHtml(t.desc)}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Link (optional) — Klick aufs Foto öffnet diese URL</label>
+            <input class="form-input" type="url" id="link_${i}"
+                   value="${escHtml(t.link || '')}"
+                   placeholder="https://...">
+          </div>
+
+        </div>
+      </div>
+    `).join('');
+
+    // Password card appended after day cards
+    body.innerHTML += `
+      <div class="day-card" id="pwCard">
+        <div class="day-card-header">
+          <span class="day-badge" style="background:#555;color:#f0e8d8;">PW</span>
+          <span class="day-name">Passwort ändern</span>
+        </div>
+        <div class="day-card-body">
+          <div class="form-group">
+            <label class="form-label">Neues Passwort</label>
+            <input class="form-input" type="password" id="pwNew" placeholder="Neues Passwort" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Wiederholen</label>
+            <input class="form-input" type="password" id="pwConfirm" placeholder="Passwort bestätigen" autocomplete="new-password">
+          </div>
+          <div id="pwError" style="font-size:0.78rem;color:#c0392b;min-height:1.1rem;margin-bottom:0.5rem;"></div>
+          <button class="btn-save" style="width:100%;margin-top:0.2rem;" onclick="changePassword()">Passwort speichern</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function changePassword() {
+    const newPw    = document.getElementById('pwNew').value;
+    const confirm  = document.getElementById('pwConfirm').value;
+    const errEl    = document.getElementById('pwError');
+
+    if (!newPw || newPw.length < 4) {
+      errEl.textContent = 'Mindestens 4 Zeichen.'; return;
+    }
+    if (newPw !== confirm) {
+      errEl.textContent = 'Passwörter stimmen nicht überein.'; return;
+    }
+    errEl.textContent = '';
+    localStorage.setItem('sauna_password', newPw);
+    document.getElementById('pwNew').value = '';
+    document.getElementById('pwConfirm').value = '';
+    showToast('Passwort geändert');
+  }
+
+  // ── PHOTO HANDLING ────────────────────────────────────────────
+  function handlePhotoUpload(idx, input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => openCrop(idx, e.target.result);
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  function setPhotoPreview(idx, dataUrl) {
+    const img = document.getElementById(`prevImg_${idx}`);
+    const ph  = document.getElementById(`prevPh_${idx}`);
+    const leg = document.getElementById(`prevLeg_${idx}`);
+    const rmBtn = document.querySelector(`#card_${idx} .btn-remove-photo`);
+
+    img.src = dataUrl;
+    img.classList.add('loaded');
+    ph.classList.add('hidden');
+    leg.classList.add('visible');
+
+    if (rmBtn) {
+      rmBtn.style.opacity = '1';
+      rmBtn.style.pointerEvents = 'auto';
+    }
+    const cropBtn = document.getElementById(`cropBtn_${idx}`);
+    if (cropBtn) {
+      cropBtn.style.opacity = '1';
+      cropBtn.style.pointerEvents = 'auto';
+    }
+  }
+
+  function removePhoto(idx) {
+    const img = document.getElementById(`prevImg_${idx}`);
+    const ph  = document.getElementById(`prevPh_${idx}`);
+    const leg = document.getElementById(`prevLeg_${idx}`);
+    const rmBtn = document.querySelector(`#card_${idx} .btn-remove-photo`);
+    const label = document.querySelector(`#fileInput_${idx}`).previousElementSibling;
+
+    img.src = '';
+    img.classList.remove('loaded');
+    ph.classList.remove('hidden');
+    leg.classList.remove('visible');
+    label.textContent = '📷 Foto hochladen';
+    if (rmBtn) { rmBtn.style.opacity = '0.4'; rmBtn.style.pointerEvents = 'none'; }
+  }
+
+  function updateLegendName(idx) {
+    const el = document.getElementById(`prevLegName_${idx}`);
+    if (el) el.textContent = document.getElementById(`name_${idx}`).value || '—';
+  }
+
+  // ── SAVE ─────────────────────────────────────────────────────
+  function saveProgram() {
+    const program = loadProgram();
+    program.forEach((t, i) => {
+      t.name = document.getElementById(`name_${i}`).value.trim() || t.name;
+      t.desc = document.getElementById(`desc_${i}`).value.trim() || t.desc;
+      t.link = document.getElementById(`link_${i}`).value.trim() || null;
+      const img = document.getElementById(`prevImg_${i}`);
+      t.photo = img && img.classList.contains('loaded') && img.src ? img.src : null;
+    });
+
+    try {
+      localStorage.setItem('sauna_program', JSON.stringify(program));
+      showToast('Gespeichert');
+      const btn = document.getElementById('saveBtn');
+      btn.classList.add('saved');
+      btn.textContent = '✓ Gespeichert';
+      setTimeout(() => { btn.classList.remove('saved'); btn.textContent = 'Alles speichern'; }, 2200);
+    } catch (e) {
+      showToast('⚠️ Speicher voll — Bilder zu groß', true);
+    }
+  }
+
+  function resetDefaults() {
+    if (!confirm('Alles zurücksetzen (inkl. Fotos)?')) return;
+    localStorage.removeItem('sauna_program');
+    renderAdminCards();
+    showToast('Zurückgesetzt');
+  }
+
+  function showToast(msg = 'Gespeichert', isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = (isError ? '' : '✓ ') + msg;
+    t.style.background = isError ? '#c0392b' : '#27ae60';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S-A-U-N-A — München</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #0a0806;
+      --bg2: #110e0a;
+      --amber: #e8820c;
+      --gold: #ffd060;
+      --ember: #c0390a;
+      --deep: #7a1a05;
+      --text: #f0e8d8;
+      --muted: #8a7a65;
+      --border: rgba(232,130,12,0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ─── STEAM CANVAS ─── */
+    .steam-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.45;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      overflow: hidden;
+    }
+
+    .hero-glow {
+      position: absolute;
+      bottom: -15%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100vw;
+      height: 65vh;
+      background: radial-gradient(ellipse at center bottom,
+        rgba(232,130,12,0.18) 0%,
+        rgba(192,57,10,0.07) 40%,
+        transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ─── LOGO SVG ─── */
+    .logo-entrance {
+      position: relative;
+    }
+
+    /* filter wrapper — intentionally separate from clip-path wrapper */
+    .logo-glow {
+      filter: drop-shadow(0 0 48px rgba(232,130,12,0.38))
+              drop-shadow(0 0 90px rgba(192,57,10,0.16));
+      animation: logoBreath 5s 2.2s ease-in-out infinite;
+    }
+
+    @keyframes logoBreath {
+      0%,100% { filter: drop-shadow(0 0 48px rgba(232,130,12,0.38)) drop-shadow(0 0 90px rgba(192,57,10,0.16)); }
+      50%      { filter: drop-shadow(0 0 70px rgba(255,160,50,0.60)) drop-shadow(0 0 130px rgba(220,70,10,0.30)); }
+    }
+
+    /* Soft gradient-mask reveal — no hard clip edge, no PowerPoint wipe */
+    .logo-wrap {
+      width: clamp(260px, 62vw, 540px);
+      opacity: 0;
+      transform: translateY(10px) scale(1.018);
+      -webkit-mask-image: linear-gradient(to bottom, black 72%, transparent 100%);
+              mask-image: linear-gradient(to bottom, black 72%, transparent 100%);
+      -webkit-mask-size: 100% 0%;
+              mask-size: 100% 0%;
+      -webkit-mask-repeat: no-repeat;
+              mask-repeat: no-repeat;
+      -webkit-mask-position: top;
+              mask-position: top;
+      animation: logoReveal 3s 0.7s cubic-bezier(0.15, 0, 0.35, 1) forwards;
+    }
+
+    .logo-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+    @keyframes logoReveal {
+      0%   {
+        opacity: 0;
+        transform: translateY(10px) scale(1.018);
+        -webkit-mask-size: 100% 0%;   mask-size: 100% 0%;
+      }
+      10%  { opacity: 1; }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        -webkit-mask-size: 100% 135%; mask-size: 100% 135%;
+      }
+    }
+
+    .logo-pre {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(0.6rem, 1.8vw, 0.8rem);
+      letter-spacing: 0.45em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 1.8rem;
+      opacity: 0;
+      animation: fadeDown 0.65s 0.05s ease-out forwards;
+    }
+
+    .tagline {
+      margin-top: 2.2rem;
+      font-size: clamp(0.82rem, 2.2vw, 1rem);
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      opacity: 0;
+      animation: fadeDown 0.7s 3.4s ease-out forwards;
+    }
+
+    .hero-meta {
+      margin-top: 2.8rem;
+      display: flex;
+      gap: 2.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeDown 0.7s 3.7s ease-out forwards;
+    }
+
+    .hero-meta-item { text-align: center; }
+
+    .hero-meta-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+
+    .hero-meta-value { font-size: 0.95rem; }
+
+    /* ─── SECTION BASE ─── */
+    section { position: relative; z-index: 1; }
+
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 2rem; }
+
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.38em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 0.9rem;
+    }
+
+    .section-title {
+      font-size: clamp(1.7rem, 4.5vw, 2.6rem);
+      font-weight: 600;
+      line-height: 1.15;
+      margin-bottom: 3rem;
+    }
+
+    .heat-divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--amber), transparent);
+      opacity: 0.25;
+    }
+
+    /* ─── PHOTO PROGRAM CARDS ─── */
+    .programm {
+      padding: 8rem 0;
+      background: transparent;
+    }
+
+    /* Woche layout: program grid left + vogelmar side image right */
+    .woche-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .woche-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .woche-side {
+      position: sticky;
+      top: 6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .woche-side-img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      display: block;
+      border: 1.5px solid var(--border);
+    }
+
+    .woche-side-caption {
+      padding: 1rem 1.2rem;
+      border: 1.5px solid var(--border);
+      border-top: none;
+      background: rgba(10,8,6,0.7);
+    }
+
+    .woche-side-caption-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.35em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+
+    .woche-side-caption-text {
+      font-size: 0.82rem;
+      color: rgba(240,232,216,0.6);
+      line-height: 1.55;
+    }
+
+    /* On mobile: side image goes below the grid */
+    @media (max-width: 960px) {
+      .woche-side {
+        position: static;
+        flex-direction: row;
+        max-width: 100%;
+        align-items: stretch;
+      }
+      .woche-side-img {
+        width: 42%;
+        aspect-ratio: 3/4;
+        flex-shrink: 0;
+      }
+      .woche-side-caption {
+        flex: 1;
+        border: 1.5px solid var(--border);
+        border-left: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 1.4rem 1.4rem 1.4rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .woche-side {
+        flex-direction: column;
+      }
+      .woche-side-img { width: 100%; }
+      .woche-side-caption { border-left: 1.5px solid var(--border); border-top: none; }
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5px;
+      background: var(--border);
+      border: 1.5px solid var(--border);
+    }
+
+    @media (max-width: 700px) {
+      .photo-grid { grid-template-columns: 1fr; }
+    }
+
+    .photo-card {
+      position: relative;
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: rgba(17,14,10,0.82);
+      cursor: default;
+      display: block;
+      color: inherit;
+      text-decoration: none;
+    }
+    a.photo-card { cursor: pointer; }
+
+    /* Photo background */
+    .photo-card-img {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: transform 0.7s cubic-bezier(.22,.68,0,1.2);
+    }
+
+    .photo-card:hover .photo-card-img { transform: scale(1.05); }
+
+    /* No-photo placeholder: heat-pattern */
+    .photo-card-img.no-photo {
+      background-image:
+        repeating-linear-gradient(
+          60deg,
+          rgba(232,130,12,0.03) 0px,
+          rgba(232,130,12,0.03) 1px,
+          transparent 1px,
+          transparent 40px
+        ),
+        repeating-linear-gradient(
+          -60deg,
+          rgba(192,57,10,0.03) 0px,
+          rgba(192,57,10,0.03) 1px,
+          transparent 1px,
+          transparent 40px
+        );
+    }
+
+    /* Gradient overlay */
+    .photo-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(10,8,6,0) 0%,
+        rgba(10,8,6,0.1) 35%,
+        rgba(10,8,6,0.55) 60%,
+        rgba(10,8,6,0.93) 100%
+      );
+      transition: background 0.3s;
+    }
+
+    .photo-card:hover .photo-card-overlay {
+      background: linear-gradient(
+        to bottom,
+        rgba(10,8,6,0) 0%,
+        rgba(10,8,6,0.15) 35%,
+        rgba(10,8,6,0.65) 60%,
+        rgba(10,8,6,0.97) 100%
+      );
+    }
+
+    /* Ember glow on hover */
+    .photo-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center bottom,
+        rgba(232,130,12,0.12) 0%, transparent 65%);
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+
+    .photo-card:hover::after { opacity: 1; }
+
+    /* Content at bottom */
+    .photo-card-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.8rem 1.6rem 1.6rem;
+    }
+
+    .photo-card-day {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .photo-card-day-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      background: var(--amber);
+      color: #0a0806;
+      padding: 0.25rem 0.5rem;
+      text-transform: uppercase;
+    }
+
+    .photo-card-day-name {
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      color: rgba(240,232,216,0.5);
+      text-transform: uppercase;
+    }
+
+    .photo-card-event {
+      font-size: clamp(1.2rem, 3vw, 1.5rem);
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 0.6rem;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    }
+
+    .photo-card-desc {
+      font-size: 0.82rem;
+      color: rgba(240,232,216,0.6);
+      line-height: 1.6;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+    }
+
+    /* Top-right card number */
+    .photo-card-num {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.4rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: rgba(240,232,216,0.25);
+    }
+
+    /* ─── INFO ─── */
+    .info {
+      padding: 8rem 0;
+      background: transparent;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 700px) { .info-grid { grid-template-columns: 1fr; gap: 3rem; } }
+
+    .info-block + .info-block { margin-top: 2.5rem; }
+
+    .info-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    .info-value {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .info-value a {
+      color: var(--amber);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(232,130,12,0.3);
+      transition: border-color 0.2s;
+    }
+
+    .info-value a:hover { border-color: var(--amber); }
+
+    .lost-found {
+      margin-top: 3rem;
+      padding: 1.75rem;
+      border: 1px solid var(--border);
+      background: rgba(10,8,6,0.55);
+    }
+
+    .lost-found-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 0.7rem;
+    }
+
+    .lost-found-text { font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
+
+    .map-wrap {
+      width: 100%;
+      aspect-ratio: 4/3;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    #leafletMap { width: 100%; height: 100%; }
+
+    /* Dark-tone Leaflet tiles via CSS filter */
+    #leafletMap .leaflet-tile-pane {
+      filter: grayscale(1) invert(1) hue-rotate(180deg) brightness(0.82);
+    }
+
+    /* Custom amber pin */
+    .amber-pin {
+      width: 20px;
+      height: 20px;
+      background: #e8820c;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid #0a0806;
+      box-shadow: 0 0 8px rgba(232,130,12,0.6);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 3rem 0;
+      background: transparent;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-logo { font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700; letter-spacing: 0.15em; }
+    .footer-copy { font-size: 0.78rem; color: var(--muted); }
+
+    /* ─── PRELOADER ─── */
+    #preloader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #0a0806;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+
+    #preloader.done {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .preloader-logo {
+      width: clamp(180px, 45vw, 320px);
+      filter: drop-shadow(0 0 32px rgba(232,130,12,0.35));
+      animation: preloaderPulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes preloaderPulse {
+      0%, 100% { filter: drop-shadow(0 0 32px rgba(232,130,12,0.35)); }
+      50%       { filter: drop-shadow(0 0 60px rgba(255,160,50,0.65)); }
+    }
+
+    .preloader-bar-wrap {
+      width: clamp(140px, 40vw, 240px);
+      height: 1px;
+      background: rgba(232,130,12,0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preloader-bar {
+      position: absolute;
+      left: -100%;
+      top: 0;
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(to right, transparent, #e8820c, #ffd060, #e8820c, transparent);
+      animation: preloaderSweep 1.4s ease-in-out infinite;
+    }
+
+    @keyframes preloaderSweep {
+      0%   { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+  </style>
+</head>
+<body>
+
+<!-- PRELOADER -->
+<div id="preloader">
+  <div class="preloader-logo">
+    <svg viewBox="0 0 601 385" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="plG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#ffd060"/>
+          <stop offset="25%"  stop-color="#f5a020"/>
+          <stop offset="55%"  stop-color="#c84010"/>
+          <stop offset="100%" stop-color="#6a1002"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#plG)" fill-rule="evenodd"
+        d="M 30,18 L 302,369 L 575,19 L 554,18 L 301,340 L 51,18 Z
+           M 416,18 L 416,99 L 417,100 L 438,100 L 439,99 L 439,80 L 441,78 L 455,78 L 456,79 L 456,98 L 457,100 L 478,100 L 479,99 L 479,18 Z
+           M 198,18 L 198,99 L 199,100 L 220,100 L 221,99 L 221,81 L 223,78 L 237,78 L 239,80 L 239,99 L 240,100 L 260,100 L 261,99 L 261,18 Z
+           M 271,18 L 271,99 L 272,100 L 333,100 L 334,99 L 334,18 L 311,18 L 311,82 L 309,84 L 296,84 L 294,82 L 294,18 Z
+           M 344,18 L 344,99 L 345,100 L 365,100 L 366,99 L 366,36 L 368,34 L 383,34 L 384,35 L 384,99 L 385,100 L 406,100 L 407,99 L 407,18 Z
+           M 126,18 L 126,67 L 163,67 L 166,69 L 166,82 L 164,84 L 126,84 L 126,99 L 127,100 L 189,100 L 189,52 L 188,51 L 150,51 L 149,50 L 149,36 L 151,34 L 189,34 L 189,18 Z
+           M 224,34 L 236,34 L 239,37 L 239,59 L 238,60 L 238,61 L 237,62 L 223,62 L 222,61 L 222,60 L 221,59 L 221,37 Z
+           M 441,34 L 454,34 L 456,36 L 456,60 L 454,62 L 441,62 L 439,60 L 439,36 Z"/>
+    </svg>
+  </div>
+  <div class="preloader-bar-wrap">
+    <div class="preloader-bar"></div>
+  </div>
+</div>
+
+<canvas class="steam-canvas" id="steamCanvas"></canvas>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <p class="logo-pre">Club · München</p>
+
+    <!-- SVG Logo -->
+    <div class="logo-entrance">
+    <div class="logo-glow">
+    <div class="logo-wrap">
+      <svg viewBox="0 0 601 385" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Diagonal fire gradient: gold top-left → deep ember bottom-right -->
+          <linearGradient id="fireG" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#ffd060"/>
+            <stop offset="25%"  stop-color="#f5a020"/>
+            <stop offset="55%"  stop-color="#c84010"/>
+            <stop offset="100%" stop-color="#6a1002"/>
+          </linearGradient>
+        </defs>
+        <!-- Compound path: V chevron + S A U N A letters, fill-rule evenodd handles A counters -->
+        <path
+          fill="url(#fireG)"
+          fill-rule="evenodd"
+          d="M 30,18 L 302,369 L 575,19 L 554,18 L 301,340 L 51,18 Z
+             M 416,18 L 416,99 L 417,100 L 438,100 L 439,99 L 439,80 L 441,78 L 455,78 L 456,79 L 456,98 L 457,100 L 478,100 L 479,99 L 479,18 Z
+             M 198,18 L 198,99 L 199,100 L 220,100 L 221,99 L 221,81 L 223,78 L 237,78 L 239,80 L 239,99 L 240,100 L 260,100 L 261,99 L 261,18 Z
+             M 271,18 L 271,99 L 272,100 L 333,100 L 334,99 L 334,18 L 311,18 L 311,82 L 309,84 L 296,84 L 294,82 L 294,18 Z
+             M 344,18 L 344,99 L 345,100 L 365,100 L 366,99 L 366,36 L 368,34 L 383,34 L 384,35 L 384,99 L 385,100 L 406,100 L 407,99 L 407,18 Z
+             M 126,18 L 126,67 L 163,67 L 166,69 L 166,82 L 164,84 L 126,84 L 126,99 L 127,100 L 189,100 L 189,52 L 188,51 L 150,51 L 149,50 L 149,36 L 151,34 L 189,34 L 189,18 Z
+             M 224,34 L 236,34 L 239,37 L 239,59 L 238,60 L 238,61 L 237,62 L 223,62 L 222,61 L 222,60 L 221,59 L 221,37 Z
+             M 441,34 L 454,34 L 456,36 L 456,60 L 454,62 L 441,62 L 439,60 L 439,36 Z"
+        />
+      </svg>
+    </div>
+    </div>
+    </div>
+
+    <p class="tagline">Donnerstag — Samstag &nbsp;·&nbsp; Ab 22 Uhr &nbsp;·&nbsp; Marsstraße 22</p>
+
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Öffnung</div>
+        <div class="hero-meta-value">22 Uhr</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Tage</div>
+        <div class="hero-meta-value">Do · Fr · Sa</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Ort</div>
+        <div class="hero-meta-value">München</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<div class="heat-divider"></div>
+
+<!-- PROGRAMM -->
+<section class="programm" id="programm">
+  <div class="container">
+    <p class="section-label">Wochenprogramm</p>
+    <h2 class="section-title">Diese Woche</h2>
+    <div class="woche-layout">
+      <div class="photo-grid" id="photoGrid">
+        <!-- Cards injected by JS -->
+      </div>
+      <aside class="woche-side">
+        <img class="woche-side-img" src="img/vogelmar16_hf.jpg" alt="Vogelmar">
+      </aside>
+    </div>
+  </div>
+</section>
+
+<div class="heat-divider"></div>
+
+<!-- INFO -->
+<section class="info" id="info">
+  <div class="container">
+    <div class="info-grid">
+      <div>
+        <p class="section-label">Wo & Wann</p>
+        <h2 class="section-title">Komm vorbei</h2>
+
+        <div class="info-block">
+          <div class="info-label">Adresse</div>
+          <div class="info-value">Marsstraße 22<br>80335 München</div>
+        </div>
+        <div class="info-block">
+          <div class="info-label">Öffnungszeiten</div>
+          <div class="info-value">Donnerstag – Samstag<br>Ab 22 Uhr</div>
+        </div>
+        <div class="info-block">
+          <div class="info-label">Kontakt</div>
+          <div class="info-value">
+            <a href="mailto:s-a-u-a@web.de">s-a-u-a@web.de</a>
+          </div>
+        </div>
+        <div class="lost-found">
+          <div class="lost-found-title">Fundsachen</div>
+          <div class="lost-found-text">
+            Verlorene Gegenstände können jeden <strong>Donnerstag zwischen 22–23 Uhr</strong> vor Ort abgeholt werden.
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="map-wrap">
+          <div id="leafletMap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <span class="footer-logo">S-A-U-N-A</span>
+      <span class="footer-copy">© 2025 · Marsstraße 22 · 80335 München</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── PROGRAM DATA ─────────────────────────────────────────────
+  const DATA_VERSION = "hf2";  // bump to force-reset stale localStorage
+
+  const DEFAULT_PROGRAM = [
+    { day: "Donnerstag", dayShort: "DO", name: "Hitzefrei",
+      desc: "Der entspannte Wochenstart. Gute Musik, wenig Regeln, viel Hitze.",
+      photo: "img/thursday_hf2.jpg",
+      link: "https://www.instagram.com/hitzefrei.sauna/" },
+    { day: "Freitag",    dayShort: "FR", name: "Dampfbad",
+      desc: "Dichter Dampf, intensive Atmosphäre. Der Abend für alle, die tiefer eintauchen wollen.",
+      photo: "img/friday_hf2.jpg",
+      link: null },
+    { day: "Samstag",    dayShort: "SA", name: "Sauna Gemischt",
+      desc: "Das volle Programm. Gemischte Runden, offene Türen, unvergessliche Nächte.",
+      photo: "img/saturday_hf2.jpg",
+      link: null }
+  ];
+
+  function loadProgram() {
+    try {
+      // If version mismatch, wipe old data so new defaults (Higgsfield images) load
+      if (localStorage.getItem('sauna_data_version') !== DATA_VERSION) {
+        localStorage.removeItem('sauna_program');
+        localStorage.setItem('sauna_data_version', DATA_VERSION);
+      }
+      const s = localStorage.getItem('sauna_program');
+      if (!s) return DEFAULT_PROGRAM;
+      const p = JSON.parse(s);
+      return p.map((item, i) => ({ ...DEFAULT_PROGRAM[i], ...item }));
+    } catch { return DEFAULT_PROGRAM; }
+  }
+
+  function escAttr(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+  function renderProgram() {
+    const program = loadProgram();
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = program.map((t, i) => {
+      const hasPhoto = t.photo && t.photo.length > 10;
+      const imgStyle = hasPhoto
+        ? `background-image: url('${t.photo}')`
+        : '';
+      const link = t.link && t.link.trim();
+      const tagOpen  = link
+        ? `<a class="photo-card" href="${escAttr(link)}" target="_blank" rel="noopener">`
+        : `<div class="photo-card">`;
+      const tagClose = link ? '</a>' : '</div>';
+      return `
+        ${tagOpen}
+          <div class="photo-card-img ${hasPhoto ? '' : 'no-photo'}" style="${imgStyle}"></div>
+          <div class="photo-card-overlay"></div>
+          <div class="photo-card-num">0${i + 1}</div>
+          <div class="photo-card-content">
+            <div class="photo-card-day">
+              <span class="photo-card-day-badge">${t.dayShort}</span>
+              <span class="photo-card-day-name">${t.day}</span>
+            </div>
+            <div class="photo-card-event">${t.name}</div>
+            <div class="photo-card-desc">${t.desc}</div>
+          </div>
+        ${tagClose}
+      `;
+    }).join('');
+  }
+
+  renderProgram();
+
+  // Lock hero height once at load so mobile URL-bar show/hide can't move the scroll hint
+  (function lockHeroHeight() {
+    const hero = document.querySelector('.hero');
+    if (hero) hero.style.minHeight = window.innerHeight + 'px';
+  })();
+
+  // ── PRELOADER ─────────────────────────────────────────────────
+  (function initPreloader() {
+    const loader = document.getElementById('preloader');
+    if (!loader) return;
+
+    // Collect all images on the page (card backgrounds + explicit imgs)
+    const program = loadProgram();
+    const srcs = [
+      ...program.map(t => t.photo).filter(Boolean),
+      'img/vogelmar16_hf.jpg',
+    ];
+
+    let loaded = 0;
+    const total = srcs.length;
+
+    function tryDone() {
+      loaded++;
+      if (loaded >= total) dismiss();
+    }
+
+    function dismiss() {
+      // Minimum 600ms so the animation has a beat to show
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, 600 - elapsed);
+      setTimeout(() => loader.classList.add('done'), delay);
+    }
+
+    const startTime = Date.now();
+
+    if (total === 0) {
+      dismiss();
+      return;
+    }
+
+    srcs.forEach(src => {
+      const img = new Image();
+      img.onload = img.onerror = tryDone;
+      img.src = src;
+    });
+
+    // Safety fallback: dismiss after 4s regardless
+    setTimeout(dismiss, 4000);
+  })();
+
+  // ══════════════════════════════════════════════════════════════
+  // PARTICLE SYSTEM — interactive dust + ember + intro convergence
+  // ══════════════════════════════════════════════════════════════
+  const canvas = document.getElementById('steamCanvas');
+  const ctx    = canvas.getContext('2d');
+  let W = canvas.width  = innerWidth;
+  let H = canvas.height = innerHeight;
+
+  window.addEventListener('resize', () => {
+    W = canvas.width  = innerWidth;
+    H = canvas.height = innerHeight;
+  });
+
+  // ── INTERACTION STATE ────────────────────────────────────────
+  let mx = W / 2, my = H / 2;            // mouse
+  let scrollVel = 0, prevSY = 0;         // scroll
+  let tvx = 0, tvy = 0, ptx = 0, pty = 0; // touch
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  window.addEventListener('scroll', () => {
+    const sy = window.scrollY;
+    scrollVel = (sy - prevSY) * 0.5;
+    prevSY = sy;
+  }, { passive: true });
+
+  document.addEventListener('touchstart', e => {
+    ptx = e.touches[0].clientX;
+    pty = e.touches[0].clientY;
+    tvx = tvy = 0;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    tvx = (t.clientX - ptx) * 0.45;
+    tvy = (t.clientY - pty) * 0.45;
+    ptx = t.clientX; pty = t.clientY;
+  }, { passive: true });
+
+  // ── AMBIENT PARTICLES (3 layers) ────────────────────────────
+  // Layer A: large faint steam orbs  Layer B: mid dust  Layer C: tiny embers
+  function mkParticle(warm = false) {
+    const layer = Math.random() < 0.45 ? 'steam'
+                : Math.random() < 0.6  ? 'dust' : 'ember';
+    const p = {
+      layer,
+      x: Math.random() * W,
+      y: warm ? Math.random() * H : H + Math.random() * 200,
+      vx: 0, vy: 0,
+      wobble: Math.random() * Math.PI * 2,
+      wS: (Math.random() - 0.5) * 0.012,
+    };
+    if (layer === 'steam') {
+      p.r = Math.random() * 110 + 40;
+      p.speed = Math.random() * 0.18 + 0.04;
+      p.drift = (Math.random() - 0.5) * 0.2;
+      p.op    = Math.random() * 0.075 + 0.012;
+      p.decay = 0.000085;
+    } else if (layer === 'dust') {
+      p.r = Math.random() * 22 + 5;
+      p.speed = Math.random() * 0.28 + 0.07;
+      p.drift = (Math.random() - 0.5) * 0.35;
+      p.op    = Math.random() * 0.22 + 0.06;
+      p.decay = 0.00022;
+    } else {
+      p.r = Math.random() * 5 + 1.5;
+      p.speed = Math.random() * 0.7 + 0.25;
+      p.drift = (Math.random() - 0.5) * 0.5;
+      p.op    = Math.random() * 0.85 + 0.35;
+      p.decay = 0.0012;
+    }
+    return p;
+  }
+
+  const AMB_COUNT = window.innerWidth < 700 ? 60 : 160;
+  const ambient = Array.from({ length: AMB_COUNT }, () => mkParticle(true));
+
+  function updateAmbient(p, i) {
+    // Mouse / touch repulsion
+    const repelR = p.layer === 'ember' ? 100 : p.layer === 'dust' ? 160 : 220;
+    const rx = p.x - mx, ry = p.y - my;
+    const rd = Math.sqrt(rx * rx + ry * ry);
+    if (rd < repelR && rd > 0.5) {
+      const f = ((repelR - rd) / repelR) * 1.8;
+      p.vx += (rx / rd) * f;
+      p.vy += (ry / rd) * f;
+    }
+
+    // Touch wind
+    p.vx += tvx * 0.06;
+    p.vy += tvy * 0.06;
+
+    // Scroll turbulence
+    p.vy += scrollVel * 0.03;
+
+    // Velocity damping
+    p.vx *= 0.93;
+    p.vy *= 0.94;
+
+    // Natural movement
+    p.wobble += p.wS;
+    p.x += p.drift + Math.sin(p.wobble) * 0.35 + p.vx;
+    p.y -= p.speed + p.vy * 0.2;
+    p.op -= p.decay;
+
+    if (p.op <= 0 || p.y < -p.r * 2 || p.x < -p.r * 3 || p.x > W + p.r * 3) {
+      ambient[i] = mkParticle(false);
+    }
+  }
+
+  function drawAmbient(p) {
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+    if (p.layer === 'ember') {
+      g.addColorStop(0,   `rgba(255,210,80,${p.op})`);
+      g.addColorStop(0.35,`rgba(232,130,12,${p.op * 0.65})`);
+      g.addColorStop(1,   'transparent');
+    } else if (p.layer === 'dust') {
+      g.addColorStop(0,   `rgba(210,145,55,${p.op})`);
+      g.addColorStop(0.55,`rgba(180,90,18,${p.op * 0.4})`);
+      g.addColorStop(1,   'transparent');
+    } else {
+      g.addColorStop(0,   `rgba(232,130,12,${p.op})`);
+      g.addColorStop(0.5, `rgba(192,57,10,${p.op * 0.3})`);
+      g.addColorStop(1,   'transparent');
+    }
+    ctx.beginPath();
+    ctx.fillStyle = g;
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── RENDER LOOP ───────────────────────────────────────────────
+  let prevTS = 0;
+  function frame(ts) {
+    const dt = Math.min(ts - prevTS, 50);
+    prevTS = ts;
+
+    tvx *= 0.88; tvy *= 0.88;
+    scrollVel *= 0.85;
+
+    ctx.clearRect(0, 0, W, H);
+    ambient.forEach((p, i) => { updateAmbient(p, i); drawAmbient(p); });
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ── LEAFLET MAP ───────────────────────────────────────────────
+  const LAT = 48.1434971, LNG = 11.5579548; // Marsstraße 22, München (from Google Maps)
+  const map = L.map('leafletMap', {
+    center: [LAT, LNG],
+    zoom: 16,
+    zoomControl: false,
+    scrollWheelZoom: false,
+    dragging: false,
+    doubleClickZoom: false,
+    touchZoom: false,
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19,
+  }).addTo(map);
+
+  const pinIcon = L.divIcon({
+    className: '',
+    html: '<div class="amber-pin"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 20],
+  });
+
+  L.marker([LAT, LNG], { icon: pinIcon }).addTo(map);
+
+  const GMAPS_URL = 'https://www.google.com/maps/place/SAUNA/@48.1434971,11.5553745,16z/data=!3m1!4b1!4m6!3m5!1s0x479e75fb8770af7d:0xddaa2021981e0173!8m2!3d48.1434971!4d11.5579548!16s%2Fg%2F1hc3frp36?entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D';
+  document.getElementById('leafletMap').style.cursor = 'pointer';
+  document.getElementById('leafletMap').addEventListener('click', () => window.open(GMAPS_URL, '_blank'));
+</script>
+</body>
+</html>
