@@ -572,36 +572,41 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      /* Very subtle dark veil so image shows dimly between fog bands */
-      background: rgba(15, 12, 9, 0.40);
+      background: transparent; /* image fully visible beneath the particles */
     }
 
-    /* Canvas (kept for JS but not primary now) */
-    .fog-canvas-inner {
+    /* Individual floating fog blobs — real fog, not a flat filter */
+    .fog-particle {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      display: none; /* disabled — CSS bands handle the fog */
-    }
-
-    /* Horizontal fog bands — drift independently, gaps reveal dark image */
-    .fog-band {
-      position: absolute;
-      left: -30%;
-      width: 160%;
       border-radius: 50%;
       pointer-events: none;
+      will-change: transform;
+      background: radial-gradient(ellipse, rgba(228,224,220,0.88) 0%, rgba(210,206,202,0.52) 38%, rgba(195,191,187,0.22) 62%, transparent 78%);
+      filter: blur(10px);
+      transition: opacity 2.8s ease, transform 2.8s ease;
     }
-    .fog-band-1 { height: 55%; top: -18%;   background: radial-gradient(ellipse 100% 100%, rgba(255,252,248,0.68) 0%, rgba(242,238,232,0.35) 45%, transparent 72%); filter: blur(14px); animation: fb1 9s  ease-in-out infinite alternate; }
-    .fog-band-2 { height: 50%; top: 15%;    background: radial-gradient(ellipse 100% 100%, rgba(250,248,244,0.55) 0%, rgba(236,232,226,0.28) 45%, transparent 70%); filter: blur(18px); animation: fb2 12s ease-in-out infinite alternate; }
-    .fog-band-3 { height: 55%; bottom: -14%; background: radial-gradient(ellipse 100% 100%, rgba(255,253,250,0.62) 0%, rgba(240,236,230,0.32) 45%, transparent 72%); filter: blur(15px); animation: fb3 10s ease-in-out infinite alternate; }
-    .fog-band-4 { height: 45%; top: 38%;    background: radial-gradient(ellipse 100% 100%, rgba(248,245,241,0.45) 0%, rgba(232,228,222,0.22) 45%, transparent 68%); filter: blur(20px); animation: fb4 14s ease-in-out infinite alternate; }
+    /* Sizes & positions: staggered to cover the image with visible gaps */
+    .fog-p1 { width:135%; height:55%; top:-20%; left:-18%; animation: fpa 10s ease-in-out infinite alternate; }
+    .fog-p2 { width:115%; height:58%; bottom:-18%; right:-12%; animation: fpb 13s ease-in-out infinite alternate; }
+    .fog-p3 { width:95%;  height:50%; top:18%;  left:-8%;   animation: fpc 8s  ease-in-out infinite alternate; }
+    .fog-p4 { width:105%; height:48%; bottom:12%; left:0%;   animation: fpd 11s ease-in-out infinite alternate; }
+    .fog-p5 { width:80%;  height:52%; top:38%;  right:-4%;  animation: fpe 9s  ease-in-out infinite alternate; }
+    .fog-p6 { width:75%;  height:44%; top:58%;  left:12%;   animation: fpf 12s ease-in-out infinite alternate; }
 
-    @keyframes fb1 { 0%{transform:translateX(0)  scaleX(1);}    100%{transform:translateX(10%) scaleX(1.06);} }
-    @keyframes fb2 { 0%{transform:translateX(0)  scaleX(1.04);} 100%{transform:translateX(-8%) scaleX(0.96);} }
-    @keyframes fb3 { 0%{transform:translateX(0)  scaleX(0.97);} 100%{transform:translateX(7%)  scaleX(1.05);} }
-    @keyframes fb4 { 0%{transform:translateX(0)  scaleX(1.02);} 100%{transform:translateX(-6%) scaleX(0.98);} }
+    @keyframes fpa { 0%{transform:translate(0,0)   scale(1);}    100%{transform:translate(7%,3%)   scale(1.06);} }
+    @keyframes fpb { 0%{transform:translate(0,0)   scale(1.04);} 100%{transform:translate(-6%,-3%) scale(0.96);} }
+    @keyframes fpc { 0%{transform:translate(0,0)   scale(0.97);} 100%{transform:translate(5%,-4%)  scale(1.05);} }
+    @keyframes fpd { 0%{transform:translate(0,0)   scale(1.02);} 100%{transform:translate(-5%,4%)  scale(0.97);} }
+    @keyframes fpe { 0%{transform:translate(0,0)   scale(1);}    100%{transform:translate(4%,-3%)  scale(1.03);} }
+    @keyframes fpf { 0%{transform:translate(0,0)   scale(1.01);} 100%{transform:translate(-3%,5%)  scale(0.98);} }
+
+    /* Rising animation triggered by JS on click */
+    .fog-particle.fog-rise {
+      opacity: 0 !important;
+      transform: translateY(-90%) scale(0.85) !important;
+      transition: opacity 2.8s ease, transform 2.8s ease !important;
+      animation-play-state: paused !important;
+    }
 
     /* ── SCHNÄPPCHEN diagonal label ── */
     .schnappchen-label {
@@ -745,10 +750,12 @@
         <div class="schnappchen-img-wrap">
           <img class="woche-side-img" src="img/vogelmar16_hf.jpg" alt="Vogelmar">
           <div class="schnappchen-fog" id="schnappchen-fog">
-            <div class="fog-band fog-band-1"></div>
-            <div class="fog-band fog-band-2"></div>
-            <div class="fog-band fog-band-3"></div>
-            <div class="fog-band fog-band-4"></div>
+            <div class="fog-particle fog-p1"></div>
+            <div class="fog-particle fog-p2"></div>
+            <div class="fog-particle fog-p3"></div>
+            <div class="fog-particle fog-p4"></div>
+            <div class="fog-particle fog-p5"></div>
+            <div class="fog-particle fog-p6"></div>
             <span class="schnappchen-label">
               <span class="schn-star">★</span>
               Schnäppchen
@@ -1237,10 +1244,14 @@
     if (!fogDiv) return;
     // CSS fog bands handle the visual — no canvas needed here.
 
-    // ── CLICK: DISMISS FOG + SPAWN RISING CLOUDS ───────────────
+    // ── CLICK: FOG PARTICLES RISE + SPAWN MORE CLOUDS ──────────
     fogDiv.addEventListener('click', function() {
-      // 1. Dismiss the Schnäppchen cover
-      fogDiv.classList.add('dismissed');
+      // 1. Float all fog particles upward and fade them out
+      fogDiv.querySelectorAll('.fog-particle').forEach(function(p) {
+        p.classList.add('fog-rise');
+      });
+      // Disable click after first trigger
+      fogDiv.style.pointerEvents = 'none';
 
       // 2. Spawn cloud blobs that rise upward and vanish over 3 s
       const rect = fogDiv.getBoundingClientRect();
