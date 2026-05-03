@@ -1,29 +1,28 @@
-const CACHE = 'sauna-v1';
-const ASSETS = [
-  '/sauna-website/',
-  '/sauna-website/index.html',
-  '/sauna-website/manifest.json',
-  '/sauna-website/img/icon-192.png',
-  '/sauna-website/img/icon-512.png',
-  '/sauna-website/img/apple-touch-icon.png',
-];
+const CACHE = 'sauna-v2';
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
-});
+// Install: skip waiting immediately — no pre-caching that can 404
+self.addEventListener('install', () => self.skipWaiting());
 
+// Activate: clear old caches and claim all clients
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
+// Fetch: network-first, cache successful GET responses for offline fallback
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    fetch(e.request)
+      .then(res => {
+        if (res.ok) {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
