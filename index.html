@@ -1362,6 +1362,12 @@
     }
     schnLoop();
   })();
+
+  // ── SERVICE WORKER ────────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sauna-website/sw.js', { scope: '/sauna-website/' })
+      .catch(function() {});
+  }
 </script>
 </body>
 </html>
