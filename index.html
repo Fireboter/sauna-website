@@ -550,6 +550,33 @@
     .footer-logo { font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700; letter-spacing: 0.15em; }
     .footer-copy { font-size: 0.78rem; color: var(--muted); }
 
+    /* ─── PRELOAD SCREEN ─── */
+    #preload-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #0a0806;
+      pointer-events: none;
+      transition: opacity 0.55s ease;
+    }
+    #preload-screen.ready { opacity: 0; }
+
+    /* Pause all hero animations until fonts + page are ready */
+    .logo-glow,
+    .logo-wrap,
+    .logo-pre,
+    .tagline,
+    .hero-meta {
+      animation-play-state: paused;
+    }
+    body.page-ready .logo-glow,
+    body.page-ready .logo-wrap,
+    body.page-ready .logo-pre,
+    body.page-ready .tagline,
+    body.page-ready .hero-meta {
+      animation-play-state: running;
+    }
+
     /* ─── ANIMATIONS ─── */
     @keyframes fadeDown {
       from { opacity: 0; transform: translateY(-16px); }
@@ -686,6 +713,7 @@
 </head>
 <body>
 
+<div id="preload-screen"></div>
 <canvas class="fog-canvas"   id="fogCanvas"></canvas>
 <canvas class="steam-canvas" id="steamCanvas"></canvas>
 
@@ -1299,6 +1327,34 @@
       }
     });
 
+  })();
+
+  // ── PRELOADER — wait for fonts then release hero animations ──
+  (function() {
+    var screen = document.getElementById('preload-screen');
+    var start  = Date.now();
+    var MIN_MS = 400; // minimum hold so first paint is settled
+
+    function release() {
+      var elapsed = Date.now() - start;
+      var wait    = Math.max(0, MIN_MS - elapsed);
+      setTimeout(function() {
+        // Start hero animations
+        document.body.classList.add('page-ready');
+        // Fade out the dark screen
+        if (screen) screen.classList.add('ready');
+      }, wait);
+    }
+
+    // Wait for fonts (most important — avoids FOUT jank in animations)
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(release);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('load', release);
+    }
+    // Safety: always release after 2.5s regardless
+    setTimeout(release, 2500);
   })();
 
   // ── SERVICE WORKER ────────────────────────────────────────────
