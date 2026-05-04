@@ -31,6 +31,10 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
+    /* Hide canvases on mobile — they force full-page recomposites on every scroll */
+    @media (max-width: 700px) {
+      .fog-canvas, .steam-canvas { display: none !important; }
+    }
     body {
       background: var(--bg);
       color: var(--text);
@@ -580,7 +584,6 @@
       position: absolute;
       border-radius: 50%;
       pointer-events: none;
-      will-change: transform;
       background: radial-gradient(ellipse, rgba(228,224,220,0.88) 0%, rgba(210,206,202,0.52) 38%, rgba(195,191,187,0.22) 62%, transparent 78%);
       filter: blur(10px);
       transition: opacity 2.8s ease, transform 2.8s ease;
@@ -1193,12 +1196,12 @@
     ctx.fill();
   }
 
-  // ── RENDER LOOP — throttled to 30fps on mobile ───────────────
-  const TARGET_FPS = isMobile ? 30 : 60;
-  const FRAME_MS   = 1000 / TARGET_FPS;
+  // ── RENDER LOOP — desktop only, paused when hidden ───────────
+  let rafId = null;
   let prevTS = 0;
+
   function frame(ts) {
-    if (ts - prevTS < FRAME_MS - 1) { requestAnimationFrame(frame); return; }
+    if (ts - prevTS < 15) { rafId = requestAnimationFrame(frame); return; } // ~60fps cap
     prevTS = ts;
 
     tvx *= 0.88; tvy *= 0.88;
@@ -1211,9 +1214,17 @@
     ctx.clearRect(0, 0, W, H);
     ambient.forEach((p, i) => { updateAmbient(p, i); drawAmbient(p); });
 
-    requestAnimationFrame(frame);
+    rafId = requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+
+  // Only run canvas animation on desktop — mobile uses CSS only
+  if (!isMobile) {
+    rafId = requestAnimationFrame(frame);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { cancelAnimationFrame(rafId); rafId = null; }
+      else { rafId = requestAnimationFrame(frame); }
+    });
+  }
 
   // ── LEAFLET MAP ───────────────────────────────────────────────
   const LAT = 48.1434971, LNG = 11.5579548; // Marsstraße 22, München (from Google Maps)
