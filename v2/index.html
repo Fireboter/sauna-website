@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>S-A-U-N-A München — V2 Anime.js</title>
+  <meta name="theme-color" content="#090604">
+  <meta name="description" content="S-A-U-N-A München — Club, Wochenprogramm und Infos. Responsive V2 Motion Study mit Anime.js.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="../img/icon-192.png" type="image/png">
+  <script src="https://cdn.jsdelivr.net/npm/animejs@4.1.4/lib/anime.iife.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090604;
+      --bg-soft: #120c08;
+      --paper: #f4dfb6;
+      --ink: #fff3da;
+      --muted: rgba(255, 231, 190, .64);
+      --dim: rgba(255, 231, 190, .42);
+      --line: rgba(255, 178, 72, .18);
+      --amber: #ff9d22;
+      --gold: #ffd363;
+      --ember: #d7440b;
+      --red: #771807;
+      --card: rgba(255, 208, 116, .07);
+      --card-strong: rgba(255, 208, 116, .12);
+      --radius: 28px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100svh;
+      color: var(--ink);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(255,157,34,.18), transparent 28rem),
+        radial-gradient(circle at 84% 0%, rgba(215,68,11,.22), transparent 34rem),
+        linear-gradient(180deg, #0b0603 0%, #120904 46%, #080504 100%);
+      overflow-x: hidden;
+    }
+    html, body { max-width: 100%; overflow-x: clip; }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .32;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, black 0 52%, transparent 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .grain {
+      position: fixed;
+      inset: -20%;
+      pointer-events: none;
+      z-index: 2;
+      opacity: .11;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 260 260' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+      animation: grainMove 9s steps(8) infinite;
+    }
+    @keyframes grainMove { to { transform: translate3d(-8%, 6%, 0); } }
+
+    .steam-layer {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none;
+      filter: blur(18px);
+      opacity: .72;
+    }
+    .steam {
+      position: absolute;
+      width: 32vw;
+      min-width: 260px;
+      aspect-ratio: 1.7;
+      border-radius: 999px;
+      background: radial-gradient(ellipse at center, rgba(255,235,199,.17), rgba(255,175,64,.055) 48%, transparent 72%);
+      transform: translate3d(var(--x), 105vh, 0) scale(var(--s));
+    }
+
+    .shell { position: relative; z-index: 3; }
+    .container { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
+
+    .nav {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      left: max(12px, calc((100vw - 1040px) / 2));
+      right: max(12px, calc((100vw - 1040px) / 2));
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 10px 10px 16px;
+      border: 1px solid rgba(255,211,99,.16);
+      background: rgba(9, 6, 4, .58);
+      backdrop-filter: blur(18px);
+      border-radius: 999px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.28);
+    }
+    .brand {
+      font-family: "Space Mono", monospace;
+      font-weight: 700;
+      letter-spacing: .22em;
+      font-size: .78rem;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav a:not(.brand) {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 14px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: 700;
+      transition: background .22s var(--ease), color .22s var(--ease);
+    }
+    .nav a:hover, .nav a:focus-visible { background: rgba(255,211,99,.1); color: var(--ink); outline: none; }
+    .nav .v1 { border: 1px solid rgba(255,211,99,.16); color: var(--gold); }
+
+    .hero {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 112px 0 56px;
+      position: relative;
+      isolation: isolate;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+      align-items: center;
+      gap: clamp(28px, 7vw, 96px);
+    }
+    .eyebrow {
+      font-family: "Space Mono", monospace;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: .35em;
+      font-size: .72rem;
+      margin: 0 0 18px;
+    }
+    .logo-mark {
+      width: min(670px, 100%);
+      filter: drop-shadow(0 0 28px rgba(255,157,34,.28)) drop-shadow(0 0 120px rgba(215,68,11,.18));
+      transform-origin: 50% 80%;
+    }
+    .hero h1 {
+      margin: 22px 0 0;
+      font-family: "Bebas Neue", Inter, sans-serif;
+      font-size: clamp(4.4rem, 16vw, 12rem);
+      letter-spacing: .05em;
+      line-height: .82;
+      text-wrap: balance;
+    }
+    .hero h1 span {
+      display: inline-block;
+      background: linear-gradient(100deg, var(--paper), var(--gold) 42%, var(--ember));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero-copy {
+      max-width: 660px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.2vw, 1.28rem);
+      line-height: 1.65;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .btn {
+      min-height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 0 20px;
+      border: 1px solid rgba(255,211,99,.2);
+      background: rgba(255,211,99,.08);
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      box-shadow: 0 14px 38px rgba(0,0,0,.26);
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--gold), var(--amber) 52%, var(--ember));
+      color: #150804;
+      border: none;
+    }
+
+    .temperature-card {
+      position: relative;
+      border: 1px solid rgba(255,211,99,.18);
+      border-radius: calc(var(--radius) + 10px);
+      padding: clamp(18px, 3vw, 28px);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03)),
+        radial-gradient(circle at 50% 0%, rgba(255,157,34,.28), transparent 58%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 36px 100px rgba(0,0,0,.32);
+      overflow: hidden;
+    }
+    .temperature-card::before {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      background: conic-gradient(from 90deg, transparent, rgba(255,211,99,.16), transparent 32%);
+      animation: spin 12s linear infinite;
+    }
+    @keyframes spin { to { rotate: 360deg; } }
+    .temp-inner { position: relative; display: grid; gap: 18px; }
+    .temp-gauge {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 50%, #120704 0 47%, transparent 48%),
+        conic-gradient(from -140deg, var(--ember), var(--amber), var(--gold), rgba(255,211,99,.12) 75%);
+      box-shadow: inset 0 0 45px rgba(0,0,0,.54), 0 0 90px rgba(255,157,34,.14);
+    }
+    .temp-number {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(5rem, 22vw, 8rem);
+      letter-spacing: .03em;
+      color: var(--paper);
+      text-shadow: 0 0 26px rgba(255,157,34,.46);
+    }
+    .temp-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .pill {
+      border: 1px solid rgba(255,211,99,.16);
+      border-radius: 18px;
+      padding: 13px 10px;
+      background: rgba(10,6,4,.5);
+      text-align: center;
+    }
+    .pill b { display:block; color: var(--gold); font-size: .92rem; }
+    .pill span { display:block; margin-top: 4px; color: var(--dim); font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; }
+
+    section { padding: clamp(64px, 10vw, 132px) 0; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
+    .section-kicker {
+      margin: 0 0 10px;
+      color: var(--amber);
+      font-family: "Space Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: .3em;
+      font-size: .7rem;
+    }
+    .section-title {
+      margin: 0;
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(3.4rem, 9vw, 7.2rem);
+      line-height: .88;
+      letter-spacing: .035em;
+    }
+    .section-note { max-width: 420px; color: var(--muted); line-height: 1.6; margin: 0; }
+
+    .program-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .event-card {
+      position: relative;
+      min-height: 520px;
+      overflow: hidden;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,211,99,.16);
+      background: var(--card);
+      box-shadow: 0 28px 70px rgba(0,0,0,.34);
+      transform-style: preserve-3d;
+    }
+    .event-card img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; filter: saturate(1.08) contrast(1.05); }
+    .event-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(7,4,2,.96) 0%, rgba(7,4,2,.54) 34%, rgba(7,4,2,.04) 67%);
+    }
+    .event-content { position: absolute; inset: auto 0 0; z-index: 1; padding: 22px; }
+    .event-day {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: var(--gold);
+      color: #170904;
+      font-family: "Space Mono", monospace;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .event-card h3 {
+      margin: 14px 0 8px;
+      font-family: "Bebas Neue", sans-serif;
+      letter-spacing: .04em;
+      font-size: clamp(2.1rem, 5vw, 3.2rem);
+      line-height: .92;
+    }
+    .event-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,211,99,.16);
+      background: linear-gradient(180deg, rgba(255,211,99,.09), rgba(255,211,99,.035));
+      padding: clamp(22px, 4vw, 38px);
+      box-shadow: 0 24px 70px rgba(0,0,0,.26);
+    }
+    .info-list { display: grid; gap: 22px; margin-top: 28px; }
+    .info-item { display: grid; grid-template-columns: 128px 1fr; gap: 18px; align-items: baseline; padding-top: 20px; border-top: 1px solid rgba(255,211,99,.14); }
+    .info-item dt { color: var(--amber); font-family: "Space Mono", monospace; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; }
+    .info-item dd { margin: 0; color: var(--ink); line-height: 1.55; font-weight: 700; }
+    .map-card {
+      min-height: 420px;
+      display: grid;
+      place-items: end start;
+      background:
+        radial-gradient(circle at 58% 42%, rgba(255,157,34,.34) 0 7px, transparent 8px),
+        linear-gradient(32deg, transparent 0 42%, rgba(255,211,99,.18) 43% 45%, transparent 46%),
+        linear-gradient(118deg, transparent 0 34%, rgba(255,211,99,.12) 35% 37%, transparent 38%),
+        linear-gradient(8deg, transparent 0 58%, rgba(255,211,99,.1) 59% 61%, transparent 62%),
+        linear-gradient(180deg, rgba(9,6,4,.12), rgba(9,6,4,.86)),
+        radial-gradient(circle at 60% 35%, rgba(255,157,34,.2), transparent 26%),
+        linear-gradient(135deg, rgba(255,211,99,.09), rgba(215,68,11,.08));
+    }
+    .map-fallback { max-width: 360px; }
+    .map-fallback p { color: var(--muted); line-height: 1.55; }
+
+    .ticker {
+      border-block: 1px solid rgba(255,211,99,.16);
+      overflow: hidden;
+      background: rgba(255,211,99,.055);
+      padding: 16px 0;
+    }
+    .ticker-track {
+      display: flex;
+      gap: 28px;
+      width: max-content;
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(2.6rem, 8vw, 5.6rem);
+      letter-spacing: .08em;
+      line-height: 1;
+      color: rgba(255,211,99,.9);
+      white-space: nowrap;
+    }
+
+    footer { padding: 42px 0 64px; color: var(--dim); }
+    .footer-row { display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap; border-top:1px solid rgba(255,211,99,.14); padding-top:24px; }
+    .mono { font-family: "Space Mono", monospace; letter-spacing: .14em; text-transform: uppercase; font-size: .75rem; }
+
+    @media (max-width: 900px) {
+      .hero { place-items: start; }
+      .hero-grid, .info-grid { grid-template-columns: 1fr; }
+      .temperature-card { max-width: 520px; margin-inline: auto; }
+      .program-grid { grid-template-columns: 1fr; }
+      .event-card { min-height: 430px; }
+      .section-head { display: grid; }
+    }
+
+    @media (max-width: 640px) {
+      .container { width: min(100% - 24px, 1160px); }
+      .nav { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); padding: 8px; }
+      .brand { display: none; }
+      .nav-links { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+      .nav a:not(.brand) { min-height: 44px; padding: 0 6px; justify-content: center; font-size: .76rem; }
+      .hero { padding-top: 42px; padding-bottom: 92px; min-height: auto; }
+      .hero h1 { font-size: clamp(4.8rem, 24vw, 8rem); }
+      .hero-actions .btn { width: 100%; }
+      .temp-meta { grid-template-columns: 1fr; }
+      .event-card { min-height: 78svh; border-radius: 22px; }
+      .info-item { grid-template-columns: 1fr; gap: 7px; }
+      .panel { border-radius: 22px; }
+      footer { padding-bottom: 96px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+      .steam-layer { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="steam-layer" aria-hidden="true">
+    <span class="steam" style="--x:-8vw;--s:1.1"></span>
+    <span class="steam" style="--x:24vw;--s:.82"></span>
+    <span class="steam" style="--x:58vw;--s:1.22"></span>
+    <span class="steam" style="--x:78vw;--s:.72"></span>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <nav class="nav" aria-label="Navigation">
+    <a class="brand" href="#top">S-A-U-N-A</a>
+    <div class="nav-links">
+      <a href="#programm">Programm</a>
+      <a href="#info">Info</a>
+      <a href="mailto:s-a-u-a@web.de">Kontakt</a>
+      <a class="v1" href="../">V1</a>
+    </div>
+  </nav>
+
+  <main id="top" class="shell">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-text">
+          <p class="eyebrow reveal-text">Club · München · V2</p>
+          <svg class="logo-mark" viewBox="0 0 601 385" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="S-A-U-N-A Logo">
+            <defs>
+              <linearGradient id="fireG" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffd363"/>
+                <stop offset="24%" stop-color="#ff9d22"/>
+                <stop offset="58%" stop-color="#d7440b"/>
+                <stop offset="100%" stop-color="#671406"/>
+              </linearGradient>
+            </defs>
+            <path fill="url(#fireG)" fill-rule="evenodd" d="M 30,18 L 302,369 L 575,19 L 554,18 L 301,340 L 51,18 Z M 416,18 L 416,99 L 417,100 L 438,100 L 439,99 L 439,80 L 441,78 L 455,78 L 456,79 L 456,98 L 457,100 L 478,100 L 479,99 L 479,18 Z M 198,18 L 198,99 L 199,100 L 220,100 L 221,99 L 221,81 L 223,78 L 237,78 L 239,80 L 239,99 L 240,100 L 260,100 L 261,99 L 261,18 Z M 271,18 L 271,99 L 272,100 L 333,100 L 334,99 L 334,18 L 311,18 L 311,82 L 309,84 L 296,84 L 294,82 L 294,18 Z M 344,18 L 344,99 L 345,100 L 365,100 L 366,99 L 366,36 L 368,34 L 383,34 L 384,35 L 384,99 L 385,100 L 406,100 L 407,99 L 407,18 Z M 126,18 L 126,67 L 163,67 L 166,69 L 166,82 L 164,84 L 126,84 L 126,99 L 127,100 L 189,100 L 189,52 L 188,51 L 150,51 L 149,50 L 149,36 L 151,34 L 189,34 L 189,18 Z M 224,34 L 236,34 L 239,37 L 239,59 L 238,60 L 238,61 L 237,62 L 223,62 L 222,61 L 222,60 L 221,59 L 221,37 Z M 441,34 L 454,34 L 456,36 L 456,60 L 454,62 L 441,62 L 439,60 L 439,36 Z"/>
+          </svg>
+          <h1 aria-label="Heat after dark"><span>Heat</span><br><span>after dark</span></h1>
+          <p class="hero-copy reveal-text">Eine schnellere, mobilere Version der Sauna-Seite: weniger starre Leinwand, mehr taktile Motion — gesteuert mit Anime.js und sauberer responsive Struktur.</p>
+          <div class="hero-actions reveal-text">
+            <a class="btn primary" href="#programm">Diese Woche ansehen</a>
+            <a class="btn" href="https://www.google.com/maps/search/?api=1&query=Marsstra%C3%9Fe%2022%2C%2080335%20M%C3%BCnchen" target="_blank" rel="noopener">Route öffnen</a>
+          </div>
+        </div>
+        <aside class="temperature-card" aria-label="SAUNA status">
+          <div class="temp-inner">
+            <div class="temp-gauge"><div><span class="temp-number" data-count="22">0</span></div></div>
+            <div class="temp-meta">
+              <div class="pill"><b>Do–Sa</b><span>Tage</span></div>
+              <div class="pill"><b>22 Uhr</b><span>Start</span></div>
+              <div class="pill"><b>MUC</b><span>Ort</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <span>S-A-U-N-A · DONNERSTAG · FREITAG · SAMSTAG · MARSSTRASSE 22 ·</span>
+        <span>S-A-U-N-A · DONNERSTAG · FREITAG · SAMSTAG · MARSSTRASSE 22 ·</span>
+      </div>
+    </div>
+
+    <section id="programm">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Wochenprogramm</p>
+            <h2 class="section-title">Diese Woche</h2>
+          </div>
+          <p class="section-note">Die Karten bleiben bewusst groß und fingerfreundlich. Auf Mobile wird daraus eine vertikale Posterstrecke.</p>
+        </div>
+        <div class="program-grid">
+          <article class="event-card" tabindex="0">
+            <img src="../img/thursday_hf2.jpg" alt="Donnerstag im S-A-U-N-A">
+            <div class="event-content">
+              <span class="event-day">Donnerstag</span>
+              <h3>Opening Heat</h3>
+              <p>Ab 22 Uhr — warm rein, spät raus.</p>
+            </div>
+          </article>
+          <article class="event-card" tabindex="0">
+            <img src="../img/friday_hf2.jpg" alt="Freitag im S-A-U-N-A">
+            <div class="event-content">
+              <span class="event-day">Freitag</span>
+              <h3>Steam Room</h3>
+              <p>Der Freitag bekommt mehr Druck, mehr Licht, mehr Bewegung.</p>
+            </div>
+          </article>
+          <article class="event-card" tabindex="0">
+            <img src="../img/saturday_hf2.jpg" alt="Samstag im S-A-U-N-A">
+            <div class="event-content">
+              <span class="event-day">Samstag</span>
+              <h3>Late Sweat</h3>
+              <p>Samstag bleibt der lange Atem der Woche.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="info">
+      <div class="container info-grid">
+        <div class="panel">
+          <p class="section-kicker">Wo & Wann</p>
+          <h2 class="section-title">Komm vorbei</h2>
+          <dl class="info-list">
+            <div class="info-item"><dt>Adresse</dt><dd>Marsstraße 22<br>80335 München</dd></div>
+            <div class="info-item"><dt>Öffnung</dt><dd>Donnerstag – Samstag<br>ab 22 Uhr</dd></div>
+            <div class="info-item"><dt>Kontakt</dt><dd><a href="mailto:s-a-u-a@web.de">s-a-u-a@web.de</a></dd></div>
+            <div class="info-item"><dt>Fundsachen</dt><dd>Donnerstag zwischen 22–23 Uhr vor Ort.</dd></div>
+          </dl>
+        </div>
+        <a class="panel map-card" href="https://www.google.com/maps/search/?api=1&query=Marsstra%C3%9Fe%2022%2C%2080335%20M%C3%BCnchen" target="_blank" rel="noopener">
+          <div class="map-fallback">
+            <p class="section-kicker">Marsstraße 22</p>
+            <h2 class="section-title">Route</h2>
+            <p>Tippen öffnet Google Maps. Der V2-Prototyp vermeidet hier bewusst schwere Karten-Skripte auf Mobile.</p>
+          </div>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">
+    <div class="container footer-row">
+      <span class="mono">S-A-U-N-A V2 / Anime.js</span>
+      <span>V1 bleibt unter <a href="../">/sauna-website/</a> erhalten.</span>
+    </div>
+  </footer>
+
+  <script>
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const A = window.anime;
+
+    if (!reduceMotion && A) {
+      A.createTimeline({ defaults: { ease: 'outExpo' } })
+        .add('.nav', { opacity: [0, 1], y: [-18, 0], duration: 650 }, 0)
+        .add('.eyebrow', { opacity: [0, 1], y: [14, 0], duration: 650 }, 120)
+        .add('.logo-mark', { opacity: [0, 1], scale: [.88, 1], rotate: [-1.5, 0], duration: 1150 }, 180)
+        .add('.hero h1 span', { opacity: [0, 1], y: [70, 0], rotate: [4, 0], duration: 900, delay: A.stagger(90) }, 340)
+        .add('.hero-copy, .hero-actions', { opacity: [0, 1], y: [24, 0], duration: 700, delay: A.stagger(90) }, 760)
+        .add('.temperature-card', { opacity: [0, 1], x: [34, 0], scale: [.96, 1], duration: 900 }, 520)
+        .add('.pill', { opacity: [0, 1], y: [18, 0], delay: A.stagger(70), duration: 550 }, 950);
+
+      A.animate('.steam', {
+        y: ['105vh', '-42vh'],
+        x: (_, i) => [0, i % 2 ? -90 : 90],
+        opacity: [{ to: .85, duration: 900 }, { to: 0, duration: 1800 }],
+        duration: (_, i) => 7600 + i * 1200,
+        delay: A.stagger(900),
+        loop: true,
+        ease: 'inOutSine'
+      });
+
+      A.animate('.ticker-track', { x: ['0%', '-50%'], duration: 18000, loop: true, ease: 'linear' });
+      A.animate('.logo-mark', { scale: [1, 1.018], duration: 2400, alternate: true, loop: true, ease: 'inOutSine' });
+
+      const counter = document.querySelector('.temp-number');
+      A.animate(counter, {
+        textContent: [0, 22],
+        round: 1,
+        duration: 1250,
+        ease: 'outCubic',
+        onUpdate: () => { counter.textContent = parseInt(counter.textContent || '0', 10) + '°'; },
+        onComplete: () => { counter.textContent = '22°'; }
+      });
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          A.animate(entry.target, { opacity: [0, 1], y: [34, 0], duration: 760, ease: 'outExpo' });
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: .18 });
+      document.querySelectorAll('.event-card, .panel, .section-head').forEach(el => {
+        observer.observe(el);
+      });
+
+      document.querySelectorAll('.event-card').forEach(card => {
+        card.addEventListener('pointermove', event => {
+          if (window.innerWidth < 760) return;
+          const r = card.getBoundingClientRect();
+          const px = (event.clientX - r.left) / r.width - .5;
+          const py = (event.clientY - r.top) / r.height - .5;
+          A.animate(card, { rotateY: px * 8, rotateX: -py * 8, translateZ: 8, duration: 260, ease: 'outQuad' });
+        });
+        card.addEventListener('pointerleave', () => A.animate(card, { rotateY: 0, rotateX: 0, translateZ: 0, duration: 520, ease: 'outElastic(1, .7)' }));
+      });
+    } else {
+      document.querySelector('.temp-number').textContent = '22°';
+    }
+  </script>
+</body>
+</html>
